@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Courier Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 30px;
+            background: #f4f6f9;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+            gap: 18px;
+            margin-top: 25px;
+        }
+
+        .card {
+            background: white;
+            padding: 22px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px #00000012;
+        }
+
+        .card h3 {
+            font-size: 15px;
+            color: #555;
+        }
+
+        .number {
+            font-size: 30px;
+            font-weight: bold;
+            color: #1769aa;
+        }
+
+        a {
+            margin-right: 15px;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+    <h1>Local Courier Dashboard</h1>
+    <p>Welcome, {{ user.username }}!</p>
+
+    <p>
+        <a href="{% url 'parcel_track' %}">Track Parcel</a>
+
+        {% if dashboard_type == "admin" %}
+            <a href="{% url 'parcel_list' %}">Manage Parcels</a>
+            <a href="{% url 'complaint_admin_list' %}">Manage Complaints</a>
+            <!-- Naya link yahan admin ke liye add kiya gaya hai -->
+            <a href="{% url 'export_parcel_report' %}">Export Parcel Report (CSV)</a>
+        {% elif dashboard_type == "agent" %}
+            <a href="{% url 'agent_parcels' %}">My Deliveries</a>
+            <a href="{% url 'agent_complaints' %}">My Complaints</a>
+        {% else %}
+            <a href="{% url 'my_complaints' %}">My Complaints</a>
+            <a href="{% url 'complaint_create' %}">Register Complaint</a>
+        {% endif %}
+
+        <a href="{% url 'logout' %}">Logout</a>
+    </p>
+
+    <div class="stats">
+
+        {% if dashboard_type == "admin" %}
+
+            <div class="card">
+                <h3>Total Parcels</h3>
+                <div class="number">{{ total_parcels }}</div>
+            </div>
+
+            <div class="card">
+                <h3>Delivered Parcels</h3>
+                <div class="number">{{ delivered_parcels }}</div>
+            </div>
+
+            <div class="card">
+                <h3>In Transit</h3>
+                <div class="number">{{ in_transit_parcels }}</div>
+            </div>
+
+            <div class="card">
+                <h3>Failed Deliveries</h3>
+                <div class="number">{{ failed_parcels }}</div>
+            </div>
+
+            <div class="card">
+                <h3>Open Complaints</h3>
+                <div class="number">{{ open_complaints }}</div>
+            </div>
+
+            <div class="card">
+                <h3>In-Progress Complaints</h3>
+                <div class="number">{{ in_progress_complaints }}</div>
+            </div>
+
+            <div class="card">
+                <h3>Resolved Complaints</h3>
+                <div class="number">{{ resolved_complaints }}</div>
+            </div>
+
+        {% elif dashboard_type == "agent" %}
+
+            <div class="card">
+                <h3>Assigned Parcels</h3>
+                <div class="number">{{ assigned_parcels }}</div>
+            </div>
+
+            <div class="card">
+                <h3>Pending Deliveries</h3>
+                <div class="number">{{ pending_deliveries }}</div>
+            </div>
+
+            <div class="card">
+                <h3>Assigned Complaints</h3>
+                <div class="number">{{ assigned_complaints }}</div>
+            </div>
+
+            <div class="card">
+                <h3>Pending Complaints</h3>
+                <div class="number">{{ pending_complaints }}</div>
+            </div>
+
+        {% else %}
+
+            <div class="card">
+                <h3>My Parcels</h3>
+                <div class="number">{{ my_parcels }}</div>
+            </div>
+
+            <div class="card">
+                <h3>My Complaints</h3>
+                <div class="number">{{ my_complaints }}</div>
+            </div>
+
+        {% endif %}
+
+    </div>
+    <div class="stats">
+        <div class="card">
+            <h3>Delivery Performance</h3>
+            <canvas id="deliveryChart"></canvas>
+        </div>
+
+        <div class="card">
+            <h3>Complaint Overview</h3>
+            <canvas id="complaintChart"></canvas>
+        </div>
+    </div>
+
+{% if dashboard_type == "admin" %}
+{{ delivery_chart_labels|json_script:"delivery-labels" }}
+{{ delivery_chart_data|json_script:"delivery-data" }}
+{{ complaint_chart_labels|json_script:"complaint-labels" }}
+{{ complaint_chart_data|json_script:"complaint-data" }}
+
+<script>
+    const deliveryLabels = JSON.parse(
+        document.getElementById("delivery-labels").textContent
+    );
+    const deliveryData = JSON.parse(
+        document.getElementById("delivery-data").textContent
+    );
+
+    const complaintLabels = JSON.parse(
+        document.getElementById("complaint-labels").textContent
+    );
+    const complaintData = JSON.parse(
+        document.getElementById("complaint-data").textContent
+    );
+
+    new Chart(document.getElementById("deliveryChart"), {
+        type: "bar",
+        data: {
+            labels: deliveryLabels,
+            datasets: [{
+                label: "Number of Parcels",
+                data: deliveryData
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { precision: 0 }
+                }
+            }
+        }
+    });
+
+    new Chart(document.getElementById("complaintChart"), {
+        type: "doughnut",
+        data: {
+            labels: complaintLabels,
+            datasets: [{
+                label: "Complaints",
+                data: complaintData
+            }]
+        },
+        options: {
+            responsive: true
+        }
+    });
+</script>
+{% endif %}
+
+<div class="card">
+    <h2>Overdue Delivery Alerts</h2>
+    <p>
+        Parcels requiring delivery follow-up:
+        <strong>{{ overdue_count }}</strong>
+    </p>
+
+    {% if overdue_parcels %}
+        <table border="1" cellpadding="8">
+            <thead>
+                <tr>
+                    <th>Tracking ID</th>
+                    <th>Receiver</th>
+                    <th>Expected Date</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for parcel in overdue_parcels %}
+                    <tr>
+                        <td>{{ parcel.tracking_id }}</td>
+                        <td>{{ parcel.receiver_name }}</td>
+                        <td>{{ parcel.expected_delivery_date }}</td>
+                        <td>{{ parcel.get_status_display }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No overdue parcels. Great work!</p>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2>Unresolved Complaint Alerts</h2>
+    <p>
+        Complaints needing attention:
+        <strong>{{ unresolved_count }}</strong>
+    </p>
+
+    {% if unresolved_complaints %}
+        <table border="1" cellpadding="8">
+            <thead>
+                <tr>
+                    <th>Tracking ID</th>
+                    <th>Category</th>
+                    <th>Status</th>
+                    <th>Assigned Agent</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for complaint in unresolved_complaints %}
+                    <tr>
+                        <td>{{ complaint.parcel.tracking_id }}</td>
+                        <td>{{ complaint.get_category_display }}</td>
+                        <td>{{ complaint.get_status_display }}</td>
+                        <td>
+                            {% if complaint.assigned_agent %}
+                                {{ complaint.assigned_agent.username }}
+                            {% else %}
+                                Not assigned
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+</div>
+
+</body>
+</html>

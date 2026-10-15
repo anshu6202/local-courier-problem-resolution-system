@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Complaints</title>
+</head>
+<body>
+    <h1>Complaint Management</h1>
+
+    {% if complaints %}
+        <table border="1" cellpadding="8">
+            <thead>
+                <tr>
+                    <th>Parcel</th>
+                    <th>Category</th>
+                    <th>Description</th>
+                    <th>Reported By</th>
+                    <th>Assign Agent / Status</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for complaint in complaints %}
+                    <tr>
+                        <td>{{ complaint.parcel.tracking_id }}</td>
+                        <td>{{ complaint.get_category_display }}</td>
+                        <td>{{ complaint.description }}</td>
+                        <td>{{ complaint.reported_by.username }}</td>
+                        <td>
+                            <form method="post">
+                                {% csrf_token %}
+
+                                <input
+                                    type="hidden"
+                                    name="complaint_id"
+                                    value="{{ complaint.id }}"
+                                >
+
+                                <label>Agent:</label>
+                                <select name="agent_id">
+                                    <option value="">Keep current agent</option>
+
+                                    {% for agent in agents %}
+                                        <option
+                                            value="{{ agent.id }}"
+                                            {% if complaint.assigned_agent_id == agent.id %}selected{% endif %}
+                                        >
+                                            {{ agent.username }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+
+                                <label>Status:</label>
+                                <select name="status">
+                                    {% for status_value, status_label in statuses %}
+                                        <option
+                                            value="{{ status_value }}"
+                                            {% if complaint.status == status_value %}selected{% endif %}
+                                        >
+                                            {{ status_label }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+
+                                <button type="submit">Save</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No complaints found.</p>
+    {% endif %}
+</body>
+</html>

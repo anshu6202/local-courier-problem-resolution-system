@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Update Parcel Status</title>
+</head>
+<body>
+    <h1>Update Parcel Status</h1>
+
+    <p><strong>Tracking ID:</strong> {{ parcel.tracking_id }}</p>
+    <p><strong>Receiver:</strong> {{ parcel.receiver_name }}</p>
+    <p><strong>Current Status:</strong> {{ parcel.get_status_display }}</p>
+
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Update Status</button>
+    </form>
+
+    <p>
+        <a href="{% url 'agent_parcels' %}">Back to My Deliveries</a>
+    </p>
+</body>
+</html>

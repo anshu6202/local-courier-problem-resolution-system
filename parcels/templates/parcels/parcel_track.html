@@ -1,0 +1,183 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Track Parcel | Courier System</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 30px 15px;
+            font-family: Arial, sans-serif;
+            background: #f3f6fb;
+            color: #1f2937;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 30px auto;
+            padding: 28px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+        }
+
+        h1, h2 {
+            text-align: center;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        input, button {
+            padding: 12px;
+            font-size: 16px;
+            border-radius: 6px;
+        }
+
+        input {
+            border: 1px solid #cbd5e1;
+        }
+
+        button {
+            border: none;
+            background: #2563eb;
+            color: white;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        .result {
+            margin-top: 25px;
+            padding: 18px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+        }
+
+        .status {
+            font-weight: bold;
+            color: #2563eb;
+        }
+
+        .progress {
+            margin-top: 20px;
+        }
+
+        .step {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 6px;
+            background: #f1f5f9;
+        }
+
+        .completed {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .notice {
+            margin-top: 20px;
+            color: #64748b;
+            font-size: 13px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Track Your Parcel</h1>
+        <p>Enter your tracking ID to check delivery status.</p>
+
+        <form method="get">
+            <label for="tracking_id">Tracking ID</label>
+
+            <input
+                type="text"
+                id="tracking_id"
+                name="tracking_id"
+                value="{{ tracking_id }}"
+                placeholder="Example: CR-ABC1234567"
+                maxlength="20"
+                required
+            >
+
+            <button type="submit">Track Parcel</button>
+        </form>
+
+        {% if searched %}
+            {% if parcel %}
+                <div class="result">
+                    <h2>Parcel Found</h2>
+
+                    <p>
+                        <strong>Tracking ID:</strong>
+                        {{ parcel.tracking_id }}
+                    </p>
+
+                    <p>
+                        <strong>Status:</strong>
+                        <span class="status">
+                            {{ parcel.get_status_display }}
+                        </span>
+                    </p>
+
+                    <p>
+                        <strong>Expected Delivery:</strong>
+                        {{ parcel.expected_delivery_date|date:"d M Y" }}
+                    </p>
+
+                    <div class="progress">
+                        <h3>Delivery Progress</h3>
+
+                        <div class="step completed">
+                            ✓ Parcel Registered
+                        </div>
+
+                        <div class="step {% if parcel.status == 'IN_TRANSIT' or parcel.status == 'DELIVERED' %}completed{% endif %}">
+                            {% if parcel.status == 'IN_TRANSIT' or parcel.status == 'DELIVERED' %}
+                                ✓
+                            {% else %}
+                                ○
+                            {% endif %}
+                            In Transit
+                        </div>
+
+                        <div class="step {% if parcel.status == 'DELIVERED' %}completed{% endif %}">
+                            {% if parcel.status == 'DELIVERED' %}
+                                ✓ Delivered
+                            {% else %}
+                                ○ Delivered
+                            {% endif %}
+                        </div>
+
+                        {% if parcel.status == 'FAILED' %}
+                            <p><strong>Delivery Failed.</strong> Please contact the courier administrator for assistance.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            {% else %}
+                <div class="result">
+                    <p>No parcel found with this tracking ID.</p>
+                    <p>Please check your tracking ID and try again.</p>
+                </div>
+            {% endif %}
+        {% endif %}
+
+        <p class="notice">
+            For assistance with a delivery issue, contact the courier administrator.
+        </p>
+    </div>
+</body>
+</html>

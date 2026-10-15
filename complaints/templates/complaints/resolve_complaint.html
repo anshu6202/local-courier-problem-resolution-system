@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resolve Complaint</title>
+</head>
+<body>
+    <h1>Resolve Complaint</h1>
+
+    <p><strong>Tracking ID:</strong> {{ complaint.parcel.tracking_id }}</p>
+    <p><strong>Category:</strong> {{ complaint.get_category_display }}</p>
+    <p><strong>Description:</strong> {{ complaint.description }}</p>
+
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Mark as Resolved</button>
+    </form>
+
+    <p><a href="{% url 'agent_complaints' %}">Back to My Complaints</a></p>
+</body>
+</html>

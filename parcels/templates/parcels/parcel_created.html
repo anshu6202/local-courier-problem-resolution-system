@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Parcel Registered</title>
+</head>
+<body>
+    <h1>Parcel Registered Successfully!</h1>
+
+    <p>Tracking ID:</p>
+    <h2>{{ parcel.tracking_id }}</h2>
+
+    <p>Receiver: {{ parcel.receiver_name }}</p>
+    <p>Status: {{ parcel.get_status_display }}</p>
+
+    <p>
+        <a href="{% url 'parcel_create' %}">
+            Register Another Parcel
+        </a>
+    </p>
+
+    <p><a href="{% url 'parcel_list' %}">View All Parcels</a></p>
+</body>
+</html>

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Complaints</title>
+</head>
+<body>
+    <h1>My Complaints</h1>
+    <p>
+        <a href="{% url 'complaint_create' %}">Register New Complaint</a>
+    </p>
+
+    {% if complaints %}
+    <table border="1" cellpadding="8">
+        <thead>
+            <tr>
+                <th>Tracking ID</th>
+                <th>Category</th>
+                <th>Description</th>
+                <th>Status</th>
+                <th>Resolution</th>
+                <th>Created</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for complaint in complaints %}
+            <tr>
+                <td>{{ complaint.parcel.tracking_id }}</td>
+                <td>{{ complaint.get_category_display }}</td>
+                <td>{{ complaint.description }}</td>
+                <td>{{ complaint.get_status_display }}</td>
+                <td>{{ complaint.resolution_details|default:"Pending" }}</td>
+                <td>{{ complaint.created_at|date:"d M Y, H:i" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>You have not submitted any complaints yet.</p>
+    {% endif %}
+
+    <h3>Complaint History</h3>
+    {% for item in complaint.history.all %}
+    <p>
+        {{ item.created_at|date:"d M Y, H:i" }} — {{ item.old_status|default:"Created" }} → {{ item.new_status }} ({{ item.changed_by.username }})
+        {% if item.note %} — {{ item.note }}{% endif %}
+    </p>
+    {% empty %}
+    <p>No history recorded yet.</p>
+    {% endfor %}
+</body>
+</html>

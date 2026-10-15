@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assigned Complaints</title>
+</head>
+<body>
+    <h1>My Assigned Complaints</h1>
+
+    {% if complaints %}
+        <table border="1" cellpadding="8">
+            <thead>
+                <tr>
+                    <th>Tracking ID</th>
+                    <th>Category</th>
+                    <th>Description</th>
+                    <th>Status</th>
+                    <th>Resolution</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for complaint in complaints %}
+                    <tr>
+                        <td>{{ complaint.parcel.tracking_id }}</td>
+                        <td>{{ complaint.get_category_display }}</td>
+                        <td>{{ complaint.description }}</td>
+                        <td>{{ complaint.get_status_display }}</td>
+                        <td>{{ complaint.resolution_details|default:"Pending" }}</td>
+                        <td>
+                            {% if complaint.status != "RESOLVED" %}
+                                <a href="{% url 'resolve_complaint' complaint.id %}">
+                                    Resolve
+                                </a>
+                            {% else %}
+                                Completed
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No complaints assigned to you.</p>
+    {% endif %}
+</body>
+</html>

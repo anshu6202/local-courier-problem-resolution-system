@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>All Parcels</title>
+</head>
+<body>
+    <h1>Registered Parcels</h1>
+
+    <p><a href="{% url 'parcel_create' %}">+ Register Parcel</a></p>
+
+    <table border="1" cellpadding="8">
+        <tr>
+            <th>Tracking ID</th>
+            <th>Receiver</th>
+            <th>Phone</th>
+            <th>Expected Delivery</th>
+            <th>Status</th>
+        </tr>
+
+        {% for parcel in parcels %}
+        <tr>
+            <td>{{ parcel.tracking_id }}</td>
+            <td>{{ parcel.receiver_name }}</td>
+            <td>{{ parcel.receiver_phone }}</td>
+            <td>{{ parcel.expected_delivery_date }}</td>
+            <td>{{ parcel.get_status_display }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="5">No parcels registered yet.</td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>

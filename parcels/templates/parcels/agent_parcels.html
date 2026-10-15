@@ -1,0 +1,56 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Deliveries</title>
+</head>
+<body>
+    <h1>My Assigned Deliveries</h1>
+
+    <p>Welcome, {{ request.user.username }}!</p>
+
+    <p>
+        <a href="{% url 'dashboard' %}">Back to Dashboard</a>
+    </p>
+
+    {% if parcels %}
+        <table border="1" cellpadding="10">
+            <thead>
+                <tr>
+                    <th>Tracking ID</th>
+                    <th>Receiver</th>
+                    <th>Delivery Address</th>
+                    <th>Expected Date</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for parcel in parcels %}
+                    <tr>
+                        <td>{{ parcel.tracking_id }}</td>
+                        <td>{{ parcel.receiver_name }}</td>
+                        <td>{{ parcel.delivery_address }}</td>
+                        <td>{{ parcel.expected_delivery_date }}</td>
+                        <td>{{ parcel.get_status_display }}</td>
+                        <td>
+                            {% if parcel.status == "REGISTERED" or parcel.status == "IN_TRANSIT" %}
+                                <a href="{% url 'update_parcel_status' parcel.tracking_id %}">
+                                    Update Status
+                                </a>
+                            {% else %}
+                                Completed
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No parcels have been assigned to you yet.</p>
+    {% endif %}
+</body>
+</html>
