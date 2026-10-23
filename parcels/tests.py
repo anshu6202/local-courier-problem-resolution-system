@@ -1,14 +1,10 @@
-from django.test import TestCase
-
-# Create your tests here.
-
 from datetime import date, timedelta
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
+from django.test import override_settings
 from django.urls import reverse
 from django.utils import timezone
-from django.test import override_settings
 
 from .models import Parcel, ParcelHistory, RedeliveryRequest
 from .delay_risk import assess_parcel_delay_risk

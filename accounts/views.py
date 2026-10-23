@@ -2,20 +2,21 @@ import csv
 from datetime import timedelta
 
 from django.conf import settings
-from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView
 from django.contrib import messages
-from django.shortcuts import render
-from django.shortcuts import redirect
+from django.http import HttpResponse
+from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
 from django.utils import timezone
 
-from parcels.models import Parcel
-from parcels.delay_risk import ACTIVE_STATUSES, assess_parcel_delay_risk
 from complaints.models import Complaint, ComplaintNotification
-from .permissions import role_required
+from parcels.delay_risk import ACTIVE_STATUSES, assess_parcel_delay_risk
+from parcels.models import Parcel
+
 from .forms import CustomerRegistrationForm
+from .permissions import role_required
+
 
 class UserLoginView(LoginView):
     template_name = "accounts/login.html"

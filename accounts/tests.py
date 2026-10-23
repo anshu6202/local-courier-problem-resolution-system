@@ -5,7 +5,6 @@ from django.contrib.auth import get_user_model
 from django.urls import reverse
 from django.utils import timezone
 
-from complaints.models import Complaint
 from parcels.models import Parcel, ParcelHistory
 
 

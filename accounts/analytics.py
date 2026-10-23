@@ -10,7 +10,6 @@ from django.db.models import (
     ExpressionWrapper,
     F,
     Q,
-    Sum,
 )
 from django.db.models.functions import TruncDate, TruncMonth
 from django.shortcuts import render

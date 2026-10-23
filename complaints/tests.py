@@ -1,16 +1,13 @@
-from django.test import TestCase
-
-# Create your tests here.
-
 from datetime import date, timedelta
 
+from django.contrib.auth import get_user_model
 from django.core.management import call_command
 from django.test import TestCase, override_settings
-from django.contrib.auth import get_user_model
 from django.urls import reverse
 from django.utils import timezone
 
 from parcels.models import Parcel
+
 from .models import Complaint, ComplaintNotification, ComplaintUpdate
 
 User = get_user_model()

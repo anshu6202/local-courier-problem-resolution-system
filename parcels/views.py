@@ -450,7 +450,6 @@ def update_parcel_status(request, tracking_id):
 def shipping_label(request, tracking_id):
     parcel = get_object_or_404(Parcel.objects.select_related("assigned_agent"), tracking_id=tracking_id)
     if request.user.role == "AGENT" and parcel.assigned_agent_id != request.user.id:
-        from django.http import HttpResponseForbidden
         return HttpResponseForbidden("This parcel is not assigned to you.")
 
     from reportlab.lib.pagesizes import A6
