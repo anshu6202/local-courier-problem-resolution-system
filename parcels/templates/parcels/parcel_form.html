@@ -1,18 +1,23 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Register Parcel</title>
-</head>
-<body>
-    <h1>Register New Parcel</h1>
+{% extends 'base.html' %}
 
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Register Parcel</button>
+{% block title %}Register parcel · Parcelly{% endblock %}
+
+{% block content %}
+  <section class="form-card card">
+    <p class="eyebrow">New shipment</p>
+    <h1>Register a parcel</h1>
+    <p class="subheading">
+      Add shipment details and connect it to a customer and delivery agent.
+    </p>
+
+    <form method="post" class="section-gap">
+      {% csrf_token %}
+      {{ form.as_p }}
+
+      <div class="action-row">
+        <button type="submit">Create parcel</button>
+        <a class="button button-secondary" href="{% url 'admin_parcels' %}">Cancel</a>
+      </div>
     </form>
-
-    <p><a href="{% url 'parcel_list' %}">View All Parcels</a></p>
-</body>
-</html>
+  </section>
+{% endblock %}

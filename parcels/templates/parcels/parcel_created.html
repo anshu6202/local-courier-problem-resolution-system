@@ -1,24 +1,28 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Parcel Registered</title>
-</head>
-<body>
-    <h1>Parcel Registered Successfully!</h1>
+{% extends 'base.html' %}
 
-    <p>Tracking ID:</p>
-    <h2>{{ parcel.tracking_id }}</h2>
+{% block title %}Parcel registered · Parcelly{% endblock %}
 
-    <p>Receiver: {{ parcel.receiver_name }}</p>
-    <p>Status: {{ parcel.get_status_display }}</p>
+{% block content %}
+  <section class="card tracking-card" style="text-align: center">
+    <div class="empty-icon">✓</div>
+    <p class="eyebrow">Shipment created</p>
+    <h1>Parcel is ready to track</h1>
+    <p class="subheading">Share this tracking ID with the recipient.</p>
 
-    <p>
-        <a href="{% url 'parcel_create' %}">
-            Register Another Parcel
-        </a>
-    </p>
+    <div class="meta-box section-gap">
+      <span class="meta-label">Tracking ID</span>
+      <strong style="font: 800 25px Manrope; color: var(--blue)">
+        {{ parcel.tracking_id }}
+      </strong>
+    </div>
 
-    <p><a href="{% url 'parcel_list' %}">View All Parcels</a></p>
-</body>
-</html>
+    <div class="action-row" style="justify-content: center">
+      <a class="button" href="{% url 'public_parcel_track' %}?tracking_id={{ parcel.tracking_id }}">
+        View tracking
+      </a>
+      <a class="button button-secondary" href="{% url 'admin_parcel_create' %}">
+        Register another
+      </a>
+    </div>
+  </section>
+{% endblock %}

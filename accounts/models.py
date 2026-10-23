@@ -16,3 +16,6 @@ class User(AbstractUser):
         choices=Role.choices,
         default=Role.CUSTOMER,
     )
+    phone_number = models.CharField(max_length=20, blank=True)
+    branch_code = models.CharField(max_length=30, blank=True)
+    is_active_agent = models.BooleanField(default=True)

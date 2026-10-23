@@ -1,15 +1,21 @@
 import csv
+from datetime import timedelta
 
+from django.conf import settings
 from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView
-from django.db.models import Count
+from django.contrib import messages
 from django.shortcuts import render
+from django.shortcuts import redirect
 from django.urls import reverse_lazy
 from django.utils import timezone
 
 from parcels.models import Parcel
-from complaints.models import Complaint
+from parcels.delay_risk import ACTIVE_STATUSES, assess_parcel_delay_risk
+from complaints.models import Complaint, ComplaintNotification
+from .permissions import role_required
+from .forms import CustomerRegistrationForm
 
 class UserLoginView(LoginView):
     template_name = "accounts/login.html"
@@ -17,6 +23,22 @@ class UserLoginView(LoginView):
 
     def get_success_url(self):
         return reverse_lazy("dashboard")
+
+
+def customer_register(request):
+    if request.user.is_authenticated:
+        return redirect("dashboard")
+
+    if request.method == "POST":
+        form = CustomerRegistrationForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Your customer account is ready. Please sign in.")
+            return redirect("login")
+    else:
+        form = CustomerRegistrationForm()
+
+    return render(request, "accounts/register.html", {"form": form})
 
 
 
@@ -37,12 +59,22 @@ def dashboard(request):
         context["in_transit_parcels"] = Parcel.objects.filter(
             status=Parcel.Status.IN_TRANSIT
         ).count()
+        context["unassigned_parcels"] = Parcel.objects.filter(
+            assigned_agent__isnull=True
+        ).exclude(status=Parcel.Status.DELIVERED).count()
         context["failed_parcels"] = Parcel.objects.filter(
-            status=Parcel.Status.FAILED
+            status__in=[
+                Parcel.Status.FAILED,
+                Parcel.Status.SCHEDULED_FOR_RETRY,
+                Parcel.Status.RTO_INITIATED,
+            ]
         ).count()
 
         context["open_complaints"] = Complaint.objects.filter(
             status=Complaint.Status.OPEN
+        ).count()
+        context["active_complaints"] = Complaint.objects.filter(
+            status__in=[Complaint.Status.OPEN, Complaint.Status.IN_PROGRESS]
         ).count()
         context["in_progress_complaints"] = Complaint.objects.filter(
             status=Complaint.Status.IN_PROGRESS
@@ -77,7 +109,6 @@ def dashboard(request):
             context["resolved_complaints"],
         ]
 
-        # --- AAPKA NAYA CODE ADMIN BLOCK KE ANDAR ---
         today = timezone.localdate()
 
         context["overdue_parcels"] = Parcel.objects.filter(
@@ -99,6 +130,49 @@ def dashboard(request):
         ).order_by("created_at")
 
         context["unresolved_count"] = context["unresolved_complaints"].count()
+        context["escalated_complaints"] = Complaint.objects.filter(
+            is_escalated=True,
+            status__in=[Complaint.Status.OPEN, Complaint.Status.IN_PROGRESS],
+        ).select_related("parcel", "assigned_agent").order_by("sla_deadline")
+        sla_now = timezone.now()
+        active_statuses = [Complaint.Status.OPEN, Complaint.Status.IN_PROGRESS]
+        context["overdue_complaints"] = Complaint.objects.filter(
+            status__in=active_statuses, sla_deadline__lte=sla_now
+        ).select_related("parcel").order_by("sla_deadline")
+        context["overdue_complaint_count"] = context["overdue_complaints"].count()
+        approaching_hours = max(0, int(getattr(settings, "COMPLAINT_SLA_APPROACHING_HOURS", 4)))
+        context["approaching_complaints"] = Complaint.objects.filter(
+            status__in=active_statuses,
+            is_escalated=False,
+            sla_deadline__gt=sla_now,
+            sla_deadline__lte=sla_now + timedelta(hours=approaching_hours),
+        ).select_related("parcel").order_by("sla_deadline")
+        context["approaching_complaint_count"] = context["approaching_complaints"].count()
+        context["escalated_complaint_count"] = context["escalated_complaints"].count()
+        context["unread_complaint_notifications"] = ComplaintNotification.objects.filter(
+            recipient=user, is_read=False
+        ).count()
+
+        risk_cases = []
+        active_parcels = Parcel.objects.filter(
+            status__in=ACTIVE_STATUSES
+        ).select_related("assigned_agent").prefetch_related("history").order_by(
+            "expected_delivery_date", "created_at"
+        )
+        for parcel in active_parcels:
+            assessment = assess_parcel_delay_risk(parcel)
+            if assessment["level"] != "NO_CURRENT_RISK":
+                risk_cases.append({"parcel": parcel, **assessment})
+        context["delay_risk_cases"] = risk_cases
+        context["delay_risk_high_count"] = sum(
+            case["level"] == "HIGH" for case in risk_cases
+        )
+        context["delay_risk_medium_count"] = sum(
+            case["level"] == "MEDIUM" for case in risk_cases
+        )
+        context["delay_risk_low_count"] = sum(
+            case["level"] == "LOW" for case in risk_cases
+        )
         
 
     elif getattr(user, "role", None) == "AGENT":
@@ -112,6 +186,7 @@ def dashboard(request):
             status__in=[
                 Parcel.Status.REGISTERED,
                 Parcel.Status.IN_TRANSIT,
+                Parcel.Status.SCHEDULED_FOR_RETRY,
             ],
         ).count()
         context["assigned_complaints"] = Complaint.objects.filter(
@@ -124,15 +199,19 @@ def dashboard(request):
                 Complaint.Status.IN_PROGRESS,
             ],
         ).count()
+        context["sla_complaints"] = Complaint.objects.filter(
+            assigned_agent=user,
+            status__in=[Complaint.Status.OPEN, Complaint.Status.IN_PROGRESS],
+        ).select_related("parcel").order_by("sla_deadline")[:8]
 
     else:
         context["dashboard_type"] = "customer"
 
         context["my_parcels"] = Parcel.objects.filter(
-            created_by=user
+            customer=user
         ).count()
         context["my_complaints"] = Complaint.objects.filter(
-            reported_by=user
+            customer=user
         ).count()
 
     return render(
@@ -140,6 +219,11 @@ def dashboard(request):
         "accounts/dashboard.html",
         context,
     )
+
+
+@role_required("ADMIN")
+def admin_dashboard(request):
+    return dashboard(request)
 
 
 @login_required

@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+
+{% block title %}My parcels · Parcelly{% endblock %}
+
+{% block content %}
+  <section class="page-heading">
+    <div>
+      <p class="eyebrow">Customer portal</p>
+      <h1>My parcels</h1>
+      <p class="subheading">Shipments connected to your account.</p>
+    </div>
+    <a class="button button-secondary" href="{% url 'customer_complaint_create' %}">Get help</a>
+  </section>
+
+  <section data-filterable-list data-list-unit="shipments" aria-label="Filter parcels">
+    <div class="list-tools">
+      <label class="list-search">
+        <span aria-hidden="true">⌕</span>
+        <input type="search" data-list-search placeholder="Search tracking ID or recipient" aria-label="Search parcels">
+      </label>
+      <label class="list-status">
+        Status
+        <select data-list-status aria-label="Filter parcels by status">
+          <option value="">All statuses</option>
+          <option value="REGISTERED">Registered</option>
+          <option value="IN_TRANSIT">In transit</option>
+          <option value="DELIVERED">Delivered</option>
+          <option value="FAILED">Failed</option>
+          <option value="SCHEDULED_FOR_RETRY">Scheduled for retry</option>
+          <option value="RTO_INITIATED">Return to origin</option>
+        </select>
+      </label>
+      <span class="list-count" data-list-count aria-live="polite"></span>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Tracking ID</th>
+            <th scope="col">Recipient</th>
+            <th scope="col">Expected delivery</th>
+            <th scope="col">Status</th>
+            <th scope="col">Redelivery</th>
+            <th scope="col">Tracking</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for parcel in parcels %}
+            <tr data-status="{{ parcel.status }}" data-search="{{ parcel.tracking_id }} {{ parcel.receiver_name }} {{ parcel.receiver_phone }}">
+              <td><strong>{{ parcel.tracking_id }}</strong></td>
+              <td>{{ parcel.receiver_name }}</td>
+              <td>{{ parcel.expected_delivery_date|date:'d M Y' }}</td>
+              <td><span class="pill pill-{{ parcel.status }}">{{ parcel.get_status_display }}</span></td>
+              <td>
+                {% if parcel.status == 'SCHEDULED_FOR_RETRY' and parcel.delivery_attempts < 3 %}
+                  {% if parcel.id in pending_request_parcel_ids %}
+                    <span class="pill pill-IN_PROGRESS">Request pending</span>
+                  {% else %}
+                    <a class="button button-secondary" href="{% url 'customer_redelivery_request' parcel.tracking_id %}">Request redelivery</a>
+                  {% endif %}
+                {% else %}
+                  <span class="muted">Not available</span>
+                {% endif %}
+              </td>
+              <td><a href="{% url 'parcel_track' %}?tracking_id={{ parcel.tracking_id|urlencode }}">Track shipment →</a></td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="6">
+                <div class="empty-state">
+                  <span class="empty-icon" aria-hidden="true">⌕</span>
+                  <strong>No parcels linked yet</strong>
+                  <p>Contact the courier team to connect a shipment with your account.</p>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <p class="filter-empty" data-filter-empty hidden>No parcels match your search. Try another tracking number or status.</p>
+    </div>
+  </section>
+
+  <section class="card section-gap">
+    <h2>Redelivery request updates</h2>
+    {% for redelivery_request in redelivery_requests %}
+      <article class="timeline-event">
+        <strong>{{ redelivery_request.parcel.tracking_id }}</strong>
+        <span class="pill pill-{% if redelivery_request.status == 'REJECTED' %}FAILED{% elif redelivery_request.status == 'APPROVED' %}DELIVERED{% else %}IN_PROGRESS{% endif %}">
+          {{ redelivery_request.get_status_display }}
+        </span>
+        <p>Preferred date: {{ redelivery_request.preferred_delivery_date|date:'d M Y' }}</p>
+        {% if redelivery_request.reason %}<p class="muted">Your reason: {{ redelivery_request.reason }}</p>{% endif %}
+        {% if redelivery_request.status == 'REJECTED' and redelivery_request.decision_note %}
+          <p class="failure-copy">Admin note: {{ redelivery_request.decision_note }}</p>
+        {% elif redelivery_request.status == 'APPROVED' %}
+          <p class="muted">The parcel is queued for retry using the approved date.</p>
+        {% elif redelivery_request.status == 'PENDING' %}
+          <p class="muted">An admin will review your request.</p>
+        {% endif %}
+        <time datetime="{{ redelivery_request.created_at|date:'c' }}">Requested {{ redelivery_request.created_at|date:'d M Y · H:i' }}</time>
+      </article>
+    {% empty %}
+      <p class="muted">You have no redelivery requests.</p>
+    {% endfor %}
+  </section>
+{% endblock %}

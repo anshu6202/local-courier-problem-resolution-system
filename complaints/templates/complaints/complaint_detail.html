@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+
+{% block title %}Case {{ complaint.id }} · Parcelly{% endblock %}
+
+{% block content %}
+  <section class="page-heading">
+    <div>
+      <p class="eyebrow">Support case · {{ complaint.get_category_display }}</p>
+      <h1>{{ complaint.parcel.tracking_id }}</h1>
+      <p class="subheading">
+        Opened {{ complaint.created_at|date:'d M Y' }} by {{ complaint.reported_by.username }}
+      </p>
+    </div>
+    <span class="pill pill-{{ complaint.status }}">
+      {{ complaint.get_status_display }}
+    </span>
+  </section>
+
+  <div class="content-grid">
+    <section class="card">
+      <h2>Case details</h2>
+      <p>{{ complaint.description }}</p>
+
+      {% if complaint.resolution_details %}
+        <div class="meta-box">
+          <span class="meta-label">Resolution</span>
+          {{ complaint.resolution_details }}
+        </div>
+      {% endif %}
+
+      <p class="muted">
+        Assigned agent: {{ complaint.assigned_agent.username|default:'Not assigned yet' }}
+      </p>
+      {% if complaint.resolved_at %}
+        <p class="muted">Resolved {{ complaint.resolved_at|date:'d M Y · H:i' }}</p>
+      {% endif %}
+      {% if is_assigned_agent and complaint.status != 'RESOLVED' %}
+        <a class="button" href="{% url 'resolve_complaint' complaint.id %}">
+          Mark as resolved
+        </a>
+      {% endif %}
+    </section>
+
+    <section class="card">
+      <h2>Updates</h2>
+      <ol class="timeline">
+        {% for update in updates %}
+          <li class="current">
+            <span class="timeline-dot"></span>
+            <strong>{{ update.author.username }}</strong>
+            {% if update.is_internal %}<span class="pill">Internal note</span>{% endif %}
+            <p>{{ update.message|linebreaksbr }}</p>
+            <time>{{ update.created_at|date:'d M Y · H:i' }}</time>
+            {% if update.attachment %}
+              <p><a href="{{ update.attachment.url }}">Download attachment</a></p>
+            {% endif %}
+          </li>
+        {% empty %}
+          <li>
+            <span class="timeline-dot"></span>
+            <span class="muted">No messages yet. Send an update to start the conversation.</span>
+          </li>
+        {% endfor %}
+      </ol>
+
+      {% if complaint.status != 'RESOLVED' %}
+        <form method="post" enctype="multipart/form-data" class="section-gap">
+          {% csrf_token %}
+          <label for="message">Add an update</label>
+          <textarea
+            id="message"
+            name="message"
+            maxlength="4000"
+            required
+            placeholder="Write a message for the case team..."
+          ></textarea>
+          <label for="attachment">Attachment (optional)</label>
+          <input id="attachment" type="file" name="attachment">
+          {% if is_admin or is_assigned_agent %}
+            <label class="checkbox-label">
+              <input type="checkbox" name="is_internal" value="1">
+              Internal note (hidden from the customer)
+            </label>
+          {% endif %}
+          <div class="action-row">
+            <button type="submit">Send update</button>
+          </div>
+        </form>
+      {% endif %}
+    </section>
+  </div>
+{% endblock %}

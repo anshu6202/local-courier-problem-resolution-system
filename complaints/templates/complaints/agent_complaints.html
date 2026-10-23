@@ -1,48 +1,92 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Assigned Complaints</title>
-</head>
-<body>
-    <h1>My Assigned Complaints</h1>
+{% extends 'base.html' %}
 
-    {% if complaints %}
-        <table border="1" cellpadding="8">
-            <thead>
-                <tr>
-                    <th>Tracking ID</th>
-                    <th>Category</th>
-                    <th>Description</th>
-                    <th>Status</th>
-                    <th>Resolution</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for complaint in complaints %}
-                    <tr>
-                        <td>{{ complaint.parcel.tracking_id }}</td>
-                        <td>{{ complaint.get_category_display }}</td>
-                        <td>{{ complaint.description }}</td>
-                        <td>{{ complaint.get_status_display }}</td>
-                        <td>{{ complaint.resolution_details|default:"Pending" }}</td>
-                        <td>
-                            {% if complaint.status != "RESOLVED" %}
-                                <a href="{% url 'resolve_complaint' complaint.id %}">
-                                    Resolve
-                                </a>
-                            {% else %}
-                                Completed
-                            {% endif %}
-                        </td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    {% else %}
-        <p>No complaints assigned to you.</p>
-    {% endif %}
-</body>
-</html>
+{% block title %}Assigned complaints · Parcelly{% endblock %}
+
+{% block content %}
+  <section class="page-heading">
+    <div>
+      <p class="eyebrow">Agent workspace</p>
+      <h1>Assigned complaints</h1>
+      <p class="subheading">Review and resolve customer cases assigned to you.</p>
+    </div>
+  </section>
+
+  <section data-filterable-list data-list-unit="cases" aria-label="Filter assigned complaints">
+    <div class="list-tools">
+      <label class="list-search">
+        <span aria-hidden="true">⌕</span>
+        <input type="search" data-list-search placeholder="Search tracking number or issue" aria-label="Search complaints">
+      </label>
+      <label class="list-status">Status
+        <select data-list-status aria-label="Filter complaints by status">
+          <option value="">All statuses</option>
+          <option value="OPEN">Open</option>
+          <option value="IN_PROGRESS">In progress</option>
+          <option value="RESOLVED">Resolved</option>
+        </select>
+      </label>
+      <span class="list-count" data-list-count aria-live="polite"></span>
+    </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Parcel</th>
+          <th>Issue</th>
+          <th>Status</th>
+          <th>SLA</th>
+          <th>Resolution</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for complaint in complaints %}
+          <tr data-status="{{ complaint.status }}" data-search="{{ complaint.parcel.tracking_id }} {{ complaint.get_category_display }} {{ complaint.description }}">
+            <td>
+              <a href="{% url 'agent_complaint_detail' complaint.id %}">
+                <strong>{{ complaint.parcel.tracking_id }}</strong>
+              </a><br>
+              <span class="muted">{{ complaint.reported_by.username }}</span>
+            </td>
+            <td>
+              {{ complaint.get_category_display }}<br>
+              <span class="muted">{{ complaint.description|truncatechars:60 }}</span>
+            </td>
+            <td>
+              <span class="pill pill-{{ complaint.status }}">
+                {{ complaint.get_status_display }}
+              </span>
+            </td>
+            <td>
+              {% if complaint.is_escalated or complaint.sla_time_label == 'SLA breached' %}
+                <span class="pill pill-FAILED">{{ complaint.sla_time_label }}</span>
+              {% else %}
+                <span class="pill pill-IN_PROGRESS">{{ complaint.sla_time_label }}</span>
+              {% endif %}
+            </td>
+            <td>{{ complaint.resolution_details|default:'Awaiting resolution' }}</td>
+            <td>
+              {% if complaint.status != 'RESOLVED' %}
+                <a href="{% url 'resolve_complaint' complaint.id %}">Resolve →</a>
+              {% else %}
+                <span class="muted">Complete</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="6">
+              <div class="empty-state">
+                <strong>No cases assigned</strong>
+                <p>Newly assigned complaints will appear here.</p>
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+    <p class="filter-empty" data-filter-empty hidden>No complaints match your search. Try another issue or status.</p>
+  </section>
+{% endblock %}

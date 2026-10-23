@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+
+{% block title %}Booking confirmed · Parcelly{% endblock %}
+
+{% block content %}
+  <section class="card tracking-card" style="text-align: center">
+    <div class="empty-icon" aria-hidden="true">✓</div>
+    <p class="eyebrow">Booking confirmed</p>
+    <h1>Your parcel has been booked</h1>
+    <p class="subheading">Save this tracking ID to check delivery progress.</p>
+
+    <div class="meta-box section-gap">
+      <span class="meta-label">Tracking ID</span>
+      <strong style="font: 800 25px Manrope; color: var(--blue)">
+        {{ parcel.tracking_id }}
+      </strong>
+    </div>
+
+    <div class="action-row" style="justify-content: center">
+      <a class="button" href="{% url 'public_parcel_track' %}?tracking_id={{ parcel.tracking_id|urlencode }}">
+        Track this parcel
+      </a>
+      <a class="button button-secondary" href="{% url 'customer_shipments' %}">
+        View my parcels
+      </a>
+    </div>
+  </section>
+{% endblock %}

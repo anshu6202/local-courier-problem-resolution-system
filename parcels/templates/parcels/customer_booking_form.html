@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block title %}Book a parcel · Parcelly{% endblock %}
+
+{% block content %}
+  <section class="form-card card">
+    <p class="eyebrow">Customer booking</p>
+    <h1>Book a parcel</h1>
+    <p class="subheading">Enter the sender and recipient details to create a shipment.</p>
+
+    <form method="post" class="section-gap">
+      {% csrf_token %}
+      {{ form.as_p }}
+
+      <div class="action-row">
+        <button type="submit">Book parcel</button>
+        <a class="button button-secondary" href="{% url 'dashboard' %}">Cancel</a>
+      </div>
+    </form>
+  </section>
+{% endblock %}

@@ -1,23 +1,27 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Resolve Complaint</title>
-</head>
-<body>
-    <h1>Resolve Complaint</h1>
+{% extends 'base.html' %}
 
-    <p><strong>Tracking ID:</strong> {{ complaint.parcel.tracking_id }}</p>
-    <p><strong>Category:</strong> {{ complaint.get_category_display }}</p>
-    <p><strong>Description:</strong> {{ complaint.description }}</p>
+{% block title %}Resolve complaint · Parcelly{% endblock %}
 
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Mark as Resolved</button>
+{% block content %}
+  <section class="form-card card">
+    <p class="eyebrow">Case resolution</p>
+    <h1>{{ complaint.parcel.tracking_id }}</h1>
+    <p class="subheading">
+      {{ complaint.get_category_display }} · Reported by {{ complaint.reported_by.username }}
+    </p>
+
+    <div class="meta-box section-gap">{{ complaint.description }}</div>
+
+    <form method="post" class="section-gap">
+      {% csrf_token %}
+      {{ form.as_p }}
+
+      <div class="action-row">
+        <button type="submit">Mark as resolved</button>
+        <a class="button button-secondary" href="{% url 'agent_assigned_complaints' %}">
+          Back to cases
+        </a>
+      </div>
     </form>
-
-    <p><a href="{% url 'agent_complaints' %}">Back to My Complaints</a></p>
-</body>
-</html>
+  </section>
+{% endblock %}

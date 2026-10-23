@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block title %}Request redelivery · Parcelly{% endblock %}
+
+{% block content %}
+  <section class="form-card card">
+    <p class="eyebrow">Failed delivery recovery</p>
+    <h1>Request a redelivery</h1>
+    <p class="subheading">
+      Parcel {{ parcel.tracking_id }} is eligible for a retry. Choose a preferred date.
+    </p>
+
+    <form method="post" class="section-gap">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <div class="action-row">
+        <button type="submit">Send request</button>
+        <a class="button button-secondary" href="{% url 'customer_shipments' %}">Cancel</a>
+      </div>
+    </form>
+  </section>
+{% endblock %}

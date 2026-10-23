@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+
+{% block title %}Redelivery requests · Parcelly{% endblock %}
+
+{% block content %}
+  <section class="page-heading">
+    <div>
+      <p class="eyebrow">Parcel operations</p>
+      <h1>Redelivery requests</h1>
+      <p class="subheading">Review customer date preferences and return approved parcels to the retry queue.</p>
+    </div>
+  </section>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Parcel / customer</th>
+          <th>Preferred date</th>
+          <th>Customer reason</th>
+          <th>Current assignment</th>
+          <th>Request status</th>
+          <th>Review</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+          <tr>
+            <td>
+              <a href="{% url 'admin_parcels' %}?q={{ row.redelivery_request.parcel.tracking_id|urlencode }}">
+                {{ row.redelivery_request.parcel.tracking_id }}
+              </a><br>
+              <span class="muted">{{ row.redelivery_request.requested_by.username }}</span>
+            </td>
+            <td>{{ row.redelivery_request.preferred_delivery_date|date:'d M Y' }}</td>
+            <td>{{ row.redelivery_request.reason|default:'No reason provided' }}</td>
+            <td>{{ row.redelivery_request.parcel.assigned_agent.username|default:'Unassigned' }}</td>
+            <td>
+              <span class="pill pill-{% if row.redelivery_request.status == 'REJECTED' %}FAILED{% elif row.redelivery_request.status == 'APPROVED' %}DELIVERED{% else %}IN_PROGRESS{% endif %}">
+                {{ row.redelivery_request.get_status_display }}
+              </span>
+              {% if row.redelivery_request.decision_note %}<p class="muted">{{ row.redelivery_request.decision_note }}</p>{% endif %}
+              {% if row.redelivery_request.reviewed_at %}<time>{{ row.redelivery_request.reviewed_at|date:'d M Y · H:i' }}</time>{% endif %}
+            </td>
+            <td>
+              {% if row.redelivery_request.status == 'PENDING' %}
+                <form method="post" class="form-card">
+                  {% csrf_token %}
+                  <input type="hidden" name="request_id" value="{{ row.redelivery_request.id }}">
+                  {{ row.form.as_p }}
+                  <button type="submit">Save decision</button>
+                </form>
+              {% else %}
+                <span class="muted">Reviewed by {{ row.redelivery_request.reviewed_by.username|default:'Admin' }}</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="6">
+              <div class="empty-state">
+                <strong>No redelivery requests</strong>
+                <p>Customer requests will appear here.</p>
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}

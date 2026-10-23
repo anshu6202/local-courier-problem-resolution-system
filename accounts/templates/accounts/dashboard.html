@@ -1,285 +1,221 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Courier Dashboard</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 30px;
-            background: #f4f6f9;
-        }
+{% extends 'base.html' %}
 
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-            gap: 18px;
-            margin-top: 25px;
-        }
+{% block title %}Overview · Parcelly{% endblock %}
 
-        .card {
-            background: white;
-            padding: 22px;
-            border-radius: 10px;
-            box-shadow: 0 2px 8px #00000012;
-        }
-
-        .card h3 {
-            font-size: 15px;
-            color: #555;
-        }
-
-        .number {
-            font-size: 30px;
-            font-weight: bold;
-            color: #1769aa;
-        }
-
-        a {
-            margin-right: 15px;
-        }
-    </style>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-</head>
-<body>
-
-    <h1>Local Courier Dashboard</h1>
-    <p>Welcome, {{ user.username }}!</p>
-
-    <p>
-        <a href="{% url 'parcel_track' %}">Track Parcel</a>
-
-        {% if dashboard_type == "admin" %}
-            <a href="{% url 'parcel_list' %}">Manage Parcels</a>
-            <a href="{% url 'complaint_admin_list' %}">Manage Complaints</a>
-            <!-- Naya link yahan admin ke liye add kiya gaya hai -->
-            <a href="{% url 'export_parcel_report' %}">Export Parcel Report (CSV)</a>
-        {% elif dashboard_type == "agent" %}
-            <a href="{% url 'agent_parcels' %}">My Deliveries</a>
-            <a href="{% url 'agent_complaints' %}">My Complaints</a>
-        {% else %}
-            <a href="{% url 'my_complaints' %}">My Complaints</a>
-            <a href="{% url 'complaint_create' %}">Register Complaint</a>
-        {% endif %}
-
-        <a href="{% url 'logout' %}">Logout</a>
-    </p>
-
-    <div class="stats">
-
-        {% if dashboard_type == "admin" %}
-
-            <div class="card">
-                <h3>Total Parcels</h3>
-                <div class="number">{{ total_parcels }}</div>
-            </div>
-
-            <div class="card">
-                <h3>Delivered Parcels</h3>
-                <div class="number">{{ delivered_parcels }}</div>
-            </div>
-
-            <div class="card">
-                <h3>In Transit</h3>
-                <div class="number">{{ in_transit_parcels }}</div>
-            </div>
-
-            <div class="card">
-                <h3>Failed Deliveries</h3>
-                <div class="number">{{ failed_parcels }}</div>
-            </div>
-
-            <div class="card">
-                <h3>Open Complaints</h3>
-                <div class="number">{{ open_complaints }}</div>
-            </div>
-
-            <div class="card">
-                <h3>In-Progress Complaints</h3>
-                <div class="number">{{ in_progress_complaints }}</div>
-            </div>
-
-            <div class="card">
-                <h3>Resolved Complaints</h3>
-                <div class="number">{{ resolved_complaints }}</div>
-            </div>
-
-        {% elif dashboard_type == "agent" %}
-
-            <div class="card">
-                <h3>Assigned Parcels</h3>
-                <div class="number">{{ assigned_parcels }}</div>
-            </div>
-
-            <div class="card">
-                <h3>Pending Deliveries</h3>
-                <div class="number">{{ pending_deliveries }}</div>
-            </div>
-
-            <div class="card">
-                <h3>Assigned Complaints</h3>
-                <div class="number">{{ assigned_complaints }}</div>
-            </div>
-
-            <div class="card">
-                <h3>Pending Complaints</h3>
-                <div class="number">{{ pending_complaints }}</div>
-            </div>
-
-        {% else %}
-
-            <div class="card">
-                <h3>My Parcels</h3>
-                <div class="number">{{ my_parcels }}</div>
-            </div>
-
-            <div class="card">
-                <h3>My Complaints</h3>
-                <div class="number">{{ my_complaints }}</div>
-            </div>
-
-        {% endif %}
-
+{% block content %}
+  <section class="page-heading">
+    <div>
+      <p class="eyebrow">Your workspace</p>
+      <h1>Good to see you, {{ user.first_name|default:user.username }}</h1>
+      <p class="subheading">Here’s what’s happening across your courier activity.</p>
     </div>
-    <div class="stats">
-        <div class="card">
-            <h3>Delivery Performance</h3>
-            <canvas id="deliveryChart"></canvas>
-        </div>
+    {% if dashboard_type == 'admin' %}
+      <a class="button button-secondary" href="{% url 'courier_analytics' %}">View analytics</a>
+      <a class="button" href="{% url 'admin_parcel_create' %}">＋ Register parcel</a>
+    {% endif %}
+  </section>
 
-        <div class="card">
-            <h3>Complaint Overview</h3>
-            <canvas id="complaintChart"></canvas>
-        </div>
+  {% if dashboard_type == 'admin' %}
+    <div class="stats-grid">
+      <article class="stat-card">
+        <span class="stat-label">Total parcels</span>
+        <strong class="stat-number">{{ total_parcels }}</strong>
+        <span class="stat-note">All registered shipments</span>
+      </article>
+      <article class="stat-card">
+        <span class="stat-label">In transit</span>
+        <strong class="stat-number">{{ in_transit_parcels }}</strong>
+        <span class="stat-note">Currently on the move</span>
+      </article>
+      <article class="stat-card">
+        <span class="stat-label">Overdue</span>
+        <strong class="stat-number">{{ overdue_count }}</strong>
+        <span class="stat-note">Past the expected delivery date</span>
+      </article>
+      <article class="stat-card">
+        <span class="stat-label">Open complaints</span>
+        <strong class="stat-number">{{ open_complaints }}</strong>
+      </article>
+      <article class="stat-card">
+        <span class="stat-label">In progress complaints</span>
+        <strong class="stat-number">{{ in_progress_complaints }}</strong>
+      </article>
+      <article class="stat-card">
+        <span class="stat-label">Approaching SLA</span>
+        <strong class="stat-number">{{ approaching_complaint_count }}</strong>
+        <span class="stat-note">Due within configured threshold</span>
+      </article>
+      <article class="stat-card">
+        <span class="stat-label">Overdue complaints</span>
+        <strong class="stat-number">{{ overdue_complaint_count }}</strong>
+      </article>
+      <article class="stat-card">
+        <span class="stat-label">Escalated complaints</span>
+        <strong class="stat-number">{{ escalated_complaint_count }}</strong>
+      </article>
+      <article class="stat-card">
+        <span class="stat-label">Unread SLA alerts</span>
+        <strong class="stat-number">{{ unread_complaint_notifications }}</strong>
+        <a class="stat-note" href="{% url 'admin_complaint_notifications' %}">View notifications</a>
+      </article>
     </div>
 
-{% if dashboard_type == "admin" %}
-{{ delivery_chart_labels|json_script:"delivery-labels" }}
-{{ delivery_chart_data|json_script:"delivery-data" }}
-{{ complaint_chart_labels|json_script:"complaint-labels" }}
-{{ complaint_chart_data|json_script:"complaint-data" }}
+    <div class="content-grid">
+      <section class="card">
+        <h2>Delivery overview</h2>
+        <div class="stats-grid">
+          <div>
+            <span class="stat-label">Registered</span>
+            <strong class="stat-number">{{ delivery_chart_data.0 }}</strong>
+          </div>
+          <div>
+            <span class="stat-label">Failed / retry / RTO</span>
+            <strong class="stat-number">{{ failed_parcels }}</strong>
+          </div>
+          <div>
+            <span class="stat-label">Delivered</span>
+            <strong class="stat-number">{{ delivered_parcels }}</strong>
+          </div>
+          <div>
+            <span class="stat-label">Resolved cases</span>
+            <strong class="stat-number">{{ resolved_complaints }}</strong>
+          </div>
+        </div>
+        <a href="{% url 'admin_parcel_export' %}">Download parcel report →</a>
+      </section>
 
-<script>
-    const deliveryLabels = JSON.parse(
-        document.getElementById("delivery-labels").textContent
-    );
-    const deliveryData = JSON.parse(
-        document.getElementById("delivery-data").textContent
-    );
+      <section class="card">
+        <h2>Needs attention</h2>
+        <p class="subheading">
+          {{ unassigned_parcels }} unassigned deliveries · {{ unresolved_count }} unresolved complaints
+        </p>
+        <div class="action-row">
+          <a class="button button-secondary" href="{% url 'admin_parcels' %}?unassigned=1">
+            Review unassigned parcels
+          </a>
+          <a class="button button-secondary" href="{% url 'admin_complaints' %}">
+            Review complaints
+          </a>
+        </div>
+      </section>
+    </div>
 
-    const complaintLabels = JSON.parse(
-        document.getElementById("complaint-labels").textContent
-    );
-    const complaintData = JSON.parse(
-        document.getElementById("complaint-data").textContent
-    );
+    <section class="card section-gap">
+      <h2>Overdue / escalated complaints</h2>
+      {% for complaint in escalated_complaints %}
+        <p>
+          <span class="pill pill-FAILED">SLA breached</span>
+          <a href="{% url 'complaint_detail' complaint.id %}">{{ complaint.parcel.tracking_id }}</a>
+          · {{ complaint.get_category_display }}
+          · Agent: {{ complaint.assigned_agent|default:'Unassigned' }}
+        </p>
+      {% empty %}
+        <p class="muted">No escalated complaints.</p>
+      {% endfor %}
+    </section>
 
-    new Chart(document.getElementById("deliveryChart"), {
-        type: "bar",
-        data: {
-            labels: deliveryLabels,
-            datasets: [{
-                label: "Number of Parcels",
-                data: deliveryData
-            }]
-        },
-        options: {
-            responsive: true,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: { precision: 0 }
-                }
-            }
-        }
-    });
+    <section class="card section-gap">
+      <h2>Complaints approaching their SLA</h2>
+      {% for complaint in approaching_complaints %}
+        <p><a href="{% url 'complaint_detail' complaint.id %}">{{ complaint.parcel.tracking_id }}</a> · Due {{ complaint.sla_deadline|date:'d M Y · H:i' }}</p>
+      {% empty %}
+        <p class="muted">No active complaints are approaching their deadline.</p>
+      {% endfor %}
+    </section>
 
-    new Chart(document.getElementById("complaintChart"), {
-        type: "doughnut",
-        data: {
-            labels: complaintLabels,
-            datasets: [{
-                label: "Complaints",
-                data: complaintData
-            }]
-        },
-        options: {
-            responsive: true
-        }
-    });
-</script>
-{% endif %}
+    <section class="card section-gap" aria-labelledby="delay-risk-title">
+      <h2 id="delay-risk-title">Smart delivery delay risk</h2>
+      <p class="subheading">
+        {{ delay_risk_high_count }} high · {{ delay_risk_medium_count }} medium · {{ delay_risk_low_count }} low
+      </p>
+      {% for case in delay_risk_cases %}
+        <article class="section-gap">
+          <p>
+            <span class="pill pill-{% if case.level == 'HIGH' %}FAILED{% elif case.level == 'MEDIUM' %}SCHEDULED_FOR_RETRY{% else %}IN_TRANSIT{% endif %}">{{ case.level|title }} risk</span>
+            <a href="{% url 'admin_parcels' %}?q={{ case.parcel.tracking_id|urlencode }}">{{ case.parcel.tracking_id }}</a>
+            · {{ case.parcel.get_status_display }}
+            · Agent: {{ case.parcel.assigned_agent|default:'Not assigned' }}
+          </p>
+          {% for reason in case.reasons %}
+            <p class="muted">{{ reason.message }} {{ reason.action }}</p>
+          {% endfor %}
+        </article>
+      {% empty %}
+        <p class="muted">No active parcels currently meet a delay risk rule.</p>
+      {% endfor %}
+    </section>
+  {% elif dashboard_type == 'agent' %}
+    <div class="stats-grid">
+      <article class="stat-card">
+        <span class="stat-label">Assigned parcels</span>
+        <strong class="stat-number">{{ assigned_parcels }}</strong>
+        <span class="stat-note">In your delivery queue</span>
+      </article>
+      <article class="stat-card">
+        <span class="stat-label">Pending deliveries</span>
+        <strong class="stat-number">{{ pending_deliveries }}</strong>
+        <span class="stat-note">Ready for an update</span>
+      </article>
+      <article class="stat-card">
+        <span class="stat-label">Assigned complaints</span>
+        <strong class="stat-number">{{ assigned_complaints }}</strong>
+        <span class="stat-note">Customer cases</span>
+      </article>
+      <article class="stat-card">
+        <span class="stat-label">Pending complaints</span>
+        <strong class="stat-number">{{ pending_complaints }}</strong>
+        <span class="stat-note">Need follow-up</span>
+      </article>
+    </div>
+    <div class="action-row">
+      <a class="button" href="{% url 'agent_deliveries' %}">Open deliveries</a>
+      <a class="button button-secondary" href="{% url 'agent_assigned_complaints' %}">
+        Open complaints
+      </a>
+    </div>
+    <section class="card section-gap">
+      <h2>Complaint SLA</h2>
+      {% for complaint in sla_complaints %}
+        <p>
+          <a href="{% url 'agent_complaint_detail' complaint.id %}">{{ complaint.parcel.tracking_id }}</a>
+          · {{ complaint.get_category_display }}
+          {% if complaint.is_escalated or complaint.sla_time_label == 'SLA breached' %}
+            <span class="pill pill-FAILED">{{ complaint.sla_time_label }}</span>
+          {% else %}
+            <span class="pill pill-IN_PROGRESS">{{ complaint.sla_time_label }}</span>
+          {% endif %}
+        </p>
+      {% empty %}
+        <p class="muted">No unresolved complaints assigned.</p>
+      {% endfor %}
+    </section>
+  {% else %}
+    <section class="hero">
+      <p class="eyebrow">Customer portal</p>
+      <h1>Your deliveries, in one place.</h1>
+      <p>Track a shipment or check the latest update on your parcels.</p>
+      <div class="action-row">
+        <a class="button" href="{% url 'customer_parcel_booking' %}">Book a parcel</a>
+        <a class="button" href="{% url 'public_parcel_track' %}">Track a parcel</a>
+        <a class="button button-secondary" href="{% url 'customer_shipments' %}">
+          View my parcels
+        </a>
+        <a class="button button-secondary" href="{% url 'customer_complaint_create' %}">
+          Report a parcel problem
+        </a>
+      </div>
+    </section>
 
-<div class="card">
-    <h2>Overdue Delivery Alerts</h2>
-    <p>
-        Parcels requiring delivery follow-up:
-        <strong>{{ overdue_count }}</strong>
-    </p>
-
-    {% if overdue_parcels %}
-        <table border="1" cellpadding="8">
-            <thead>
-                <tr>
-                    <th>Tracking ID</th>
-                    <th>Receiver</th>
-                    <th>Expected Date</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for parcel in overdue_parcels %}
-                    <tr>
-                        <td>{{ parcel.tracking_id }}</td>
-                        <td>{{ parcel.receiver_name }}</td>
-                        <td>{{ parcel.expected_delivery_date }}</td>
-                        <td>{{ parcel.get_status_display }}</td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    {% else %}
-        <p>No overdue parcels. Great work!</p>
-    {% endif %}
-</div>
-
-<div class="card">
-    <h2>Unresolved Complaint Alerts</h2>
-    <p>
-        Complaints needing attention:
-        <strong>{{ unresolved_count }}</strong>
-    </p>
-
-    {% if unresolved_complaints %}
-        <table border="1" cellpadding="8">
-            <thead>
-                <tr>
-                    <th>Tracking ID</th>
-                    <th>Category</th>
-                    <th>Status</th>
-                    <th>Assigned Agent</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for complaint in unresolved_complaints %}
-                    <tr>
-                        <td>{{ complaint.parcel.tracking_id }}</td>
-                        <td>{{ complaint.get_category_display }}</td>
-                        <td>{{ complaint.get_status_display }}</td>
-                        <td>
-                            {% if complaint.assigned_agent %}
-                                {{ complaint.assigned_agent.username }}
-                            {% else %}
-                                Not assigned
-                            {% endif %}
-                        </td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    {% endif %}
-</div>
-
-</body>
-</html>
+    <div class="stats-grid">
+      <article class="stat-card">
+        <span class="stat-label">My parcels</span>
+        <strong class="stat-number">{{ my_parcels }}</strong>
+      </article>
+      <article class="stat-card">
+        <span class="stat-label">My complaints</span>
+        <strong class="stat-number">{{ my_complaints }}</strong>
+        <a class="stat-note" href="{% url 'customer_complaints' %}">View case updates →</a>
+      </article>
+    </div>
+  {% endif %}
+{% endblock %}

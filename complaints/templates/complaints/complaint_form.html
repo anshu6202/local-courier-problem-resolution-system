@@ -1,27 +1,25 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register Complaint</title>
-</head>
-<body>
-    <h1>Register a Complaint</h1>
+{% extends 'base.html' %}
 
-    {% if messages %}
-        {% for message in messages %}
-            <p>{{ message }}</p>
-        {% endfor %}
-    {% endif %}
+{% block title %}Get support · Parcelly{% endblock %}
 
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Submit Complaint</button>
-    </form>
-
-    <p>
-        <a href="{% url 'my_complaints' %}">View My Complaints</a>
+{% block content %}
+  <section class="form-card card">
+    <p class="eyebrow">Customer support</p>
+    <h1>Tell us what happened</h1>
+    <p class="subheading">
+      Share your tracking ID and our team will follow up.
     </p>
-</body>
-</html>
+
+    <form method="post" class="section-gap">
+      {% csrf_token %}
+      {{ form.as_p }}
+
+      <div class="action-row">
+        <button type="submit">Submit complaint</button>
+        <a class="button button-secondary" href="{% url 'customer_complaints' %}">
+          My cases
+        </a>
+      </div>
+    </form>
+  </section>
+{% endblock %}

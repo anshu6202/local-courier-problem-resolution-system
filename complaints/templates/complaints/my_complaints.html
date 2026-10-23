@@ -1,53 +1,124 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Complaints</title>
-</head>
-<body>
-    <h1>My Complaints</h1>
-    <p>
-        <a href="{% url 'complaint_create' %}">Register New Complaint</a>
-    </p>
+{% extends 'base.html' %}
 
-    {% if complaints %}
-    <table border="1" cellpadding="8">
-        <thead>
-            <tr>
-                <th>Tracking ID</th>
-                <th>Category</th>
-                <th>Description</th>
-                <th>Status</th>
-                <th>Resolution</th>
-                <th>Created</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for complaint in complaints %}
-            <tr>
-                <td>{{ complaint.parcel.tracking_id }}</td>
-                <td>{{ complaint.get_category_display }}</td>
-                <td>{{ complaint.description }}</td>
-                <td>{{ complaint.get_status_display }}</td>
-                <td>{{ complaint.resolution_details|default:"Pending" }}</td>
-                <td>{{ complaint.created_at|date:"d M Y, H:i" }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
+{% block title %}My complaints · Parcelly{% endblock %}
+
+{% block content %}
+  <section class="page-heading">
+    <div>
+      <p class="eyebrow">Customer support</p>
+      <h1>My complaints</h1>
+      <p class="subheading">
+        Follow progress and resolution notes for your cases.
+      </p>
+    </div>
+    <a class="button" href="{% url 'complaint_create' %}">＋ New complaint</a>
+  </section>
+
+  <section data-filterable-list data-list-unit="cases" aria-label="Filter complaints">
+    <div class="list-tools">
+      <label class="list-search">
+        <span aria-hidden="true">⌕</span>
+        <input type="search" data-list-search placeholder="Search tracking number or issue" aria-label="Search complaints">
+      </label>
+      <label class="list-status">Status
+        <select data-list-status aria-label="Filter complaints by status">
+          <option value="">All statuses</option>
+          <option value="OPEN">Open</option>
+          <option value="IN_PROGRESS">In progress</option>
+          <option value="RESOLVED">Resolved</option>
+        </select>
+      </label>
+      <span class="list-count" data-list-count aria-live="polite"></span>
+    </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Parcel</th>
+          <th>Issue</th>
+          <th>Status</th>
+          <th>Resolution / feedback</th>
+          <th>Submitted</th>
+          <th>SLA / latest update</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for complaint in complaints %}
+          <tr data-status="{{ complaint.status }}" data-search="{{ complaint.parcel.tracking_id }} {{ complaint.get_category_display }} {{ complaint.description }}">
+            <td>
+              <a href="{% url 'customer_complaint_detail' complaint.id %}">
+                <strong>{{ complaint.parcel.tracking_id }}</strong>
+              </a>
+            </td>
+            <td>
+              {{ complaint.get_category_display }}<br>
+              <span class="muted">{{ complaint.description|truncatechars:55 }}</span>
+            </td>
+            <td>
+              <span class="pill pill-{{ complaint.status }}">
+                {{ complaint.get_status_display }}
+              </span>
+            </td>
+            <td>
+              {% if complaint.status == 'RESOLVED' and not complaint.feedback %}
+                <form method="post" class="inline-form">
+                  {% csrf_token %}
+                  <input type="hidden" name="complaint_id" value="{{ complaint.id }}">
+                  <label>Rate this resolution</label>
+                  <select name="rating" required>
+                    <option value="">Choose 1–5</option>
+                    <option value="5">5 · Excellent</option>
+                    <option value="4">4 · Good</option>
+                    <option value="3">3 · Okay</option>
+                    <option value="2">2 · Poor</option>
+                    <option value="1">1 · Very poor</option>
+                  </select>
+                  <input name="feedback" maxlength="2000" placeholder="Optional note">
+                  <button type="submit">Send feedback</button>
+                </form>
+              {% elif complaint.feedback %}
+                <strong>{{ complaint.feedback.rating }}/5 stars</strong><br>
+                <span class="muted">{{ complaint.feedback.comment }}</span>
+              {% else %}
+                {{ complaint.resolution_details|default:'We’re reviewing your case.' }}
+              {% endif %}
+            </td>
+            <td>{{ complaint.created_at|date:'d M Y · H:i' }}</td>
+            <td>
+              <strong>Deadline:</strong> {{ complaint.sla_deadline|date:'d M Y · H:i' }}<br>
+              {% if complaint.is_escalated %}
+                <span class="pill pill-FAILED">Escalated</span>
+              {% elif complaint.status != 'RESOLVED' and complaint.sla_deadline <= now %}
+                <span class="pill pill-FAILED">Overdue</span>
+              {% elif complaint.status == 'RESOLVED' %}
+                <span class="muted">Resolved</span>
+              {% else %}
+                <span class="muted">In time</span>
+              {% endif %}
+              {% with latest=complaint.customer_visible_updates|last %}
+                {% if latest %}
+                  <p class="muted">Latest update ({{ latest.created_at|date:'d M Y · H:i' }}): {{ latest.message|truncatechars:100 }}</p>
+                {% else %}
+                  <p class="muted">No progress updates yet.</p>
+                {% endif %}
+              {% endwith %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="6">
+              <div class="empty-state">
+                <strong>No support cases yet</strong>
+                <p>If there’s a delivery issue, tell us and we’ll help.</p>
+                <a href="{% url 'complaint_create' %}">Create a complaint →</a>
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
     </table>
-    {% else %}
-    <p>You have not submitted any complaints yet.</p>
-    {% endif %}
-
-    <h3>Complaint History</h3>
-    {% for item in complaint.history.all %}
-    <p>
-        {{ item.created_at|date:"d M Y, H:i" }} — {{ item.old_status|default:"Created" }} → {{ item.new_status }} ({{ item.changed_by.username }})
-        {% if item.note %} — {{ item.note }}{% endif %}
-    </p>
-    {% empty %}
-    <p>No history recorded yet.</p>
-    {% endfor %}
-</body>
-</html>
+  </div>
+    <p class="filter-empty" data-filter-empty hidden>No complaints match your search. Try another issue or status.</p>
+  </section>
+{% endblock %}

@@ -1,25 +1,37 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Update Parcel Status</title>
-</head>
-<body>
-    <h1>Update Parcel Status</h1>
+{% extends 'base.html' %}
 
-    <p><strong>Tracking ID:</strong> {{ parcel.tracking_id }}</p>
-    <p><strong>Receiver:</strong> {{ parcel.receiver_name }}</p>
-    <p><strong>Current Status:</strong> {{ parcel.get_status_display }}</p>
+{% block title %}Update delivery · Parcelly{% endblock %}
 
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Update Status</button>
-    </form>
-
-    <p>
-        <a href="{% url 'agent_parcels' %}">Back to My Deliveries</a>
+{% block content %}
+  <section class="form-card card">
+    <p class="eyebrow">Delivery update</p>
+    <h1>{{ parcel.tracking_id }}</h1>
+    <p class="subheading">
+      {{ parcel.receiver_name }} · {{ parcel.get_status_display }}
     </p>
-</body>
-</html>
+
+    {% if parcel.status == 'IN_TRANSIT' %}
+      <p class="muted">
+        OTP expires: {{ parcel.delivery_otp_expires_at|date:'d M Y, H:i'|default:'No active code' }}
+      </p>
+      <form method="post" class="section-gap">
+        {% csrf_token %}
+        <button class="button button-secondary" type="submit" name="action" value="renew_otp">
+          Send a new OTP
+        </button>
+      </form>
+    {% endif %}
+
+    <form method="post" class="section-gap">
+      {% csrf_token %}
+      {{ form.as_p }}
+
+      <div class="action-row">
+        <button type="submit">Save update</button>
+        <a class="button button-secondary" href="{% url 'agent_deliveries' %}">
+          Back to deliveries
+        </a>
+      </div>
+    </form>
+  </section>
+{% endblock %}

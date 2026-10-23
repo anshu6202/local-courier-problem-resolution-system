@@ -1,183 +1,161 @@
+{% extends 'base.html' %}
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Track Parcel | Courier System</title>
+{% block title %}Track a parcel · Parcelly{% endblock %}
 
-    <style>
-        * {
-            box-sizing: border-box;
-        }
+{% block content %}
+  <section class="tracking-hero" aria-labelledby="tracking-title">
+    <p class="eyebrow">Shipment visibility</p>
+    <h1 id="tracking-title">Your delivery, clearly tracked.</h1>
+    <p>Enter the tracking number to see the latest shipment progress.</p>
 
-        body {
-            margin: 0;
-            padding: 30px 15px;
-            font-family: Arial, sans-serif;
-            background: #f3f6fb;
-            color: #1f2937;
-        }
+    <form class="tracking-search" method="get" role="search">
+      <label class="sr-only" for="tracking-id">Tracking number</label>
+      <input
+        id="tracking-id"
+        autofocus
+        type="search"
+        name="tracking_id"
+        value="{{ tracking_id }}"
+        placeholder="Enter tracking number, e.g. CR-A1B2C3D4E5"
+        maxlength="20"
+        autocomplete="off"
+        required
+      >
+      <button type="submit">Track package</button>
+    </form>
+  </section>
 
-        .container {
-            max-width: 600px;
-            margin: 30px auto;
-            padding: 28px;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
-        }
+  {% if searched %}
+    {% if parcel %}
+      <section class="tracking-card" aria-labelledby="tracking-result-title">
+        <div class="tracking-overview">
+          <div>
+            <p class="eyebrow">Shipment overview</p>
+            <h2 class="tracking-number" id="tracking-result-title">{{ parcel.tracking_id }}</h2>
+            <p class="subheading">Booked {{ parcel.created_at|date:'d M Y' }}</p>
+          </div>
+          <span class="pill pill-{{ parcel.status }}">{{ parcel.get_status_display }}</span>
+        </div>
 
-        h1, h2 {
-            text-align: center;
-        }
-
-        form {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        input, button {
-            padding: 12px;
-            font-size: 16px;
-            border-radius: 6px;
-        }
-
-        input {
-            border: 1px solid #cbd5e1;
-        }
-
-        button {
-            border: none;
-            background: #2563eb;
-            color: white;
-            cursor: pointer;
-        }
-
-        button:hover {
-            background: #1d4ed8;
-        }
-
-        .result {
-            margin-top: 25px;
-            padding: 18px;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-        }
-
-        .status {
-            font-weight: bold;
-            color: #2563eb;
-        }
-
-        .progress {
-            margin-top: 20px;
-        }
-
-        .step {
-            margin: 10px 0;
-            padding: 10px;
-            border-radius: 6px;
-            background: #f1f5f9;
-        }
-
-        .completed {
-            background: #dcfce7;
-            color: #166534;
-        }
-
-        .notice {
-            margin-top: 20px;
-            color: #64748b;
-            font-size: 13px;
-            text-align: center;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>Track Your Parcel</h1>
-        <p>Enter your tracking ID to check delivery status.</p>
-
-        <form method="get">
-            <label for="tracking_id">Tracking ID</label>
-
-            <input
-                type="text"
-                id="tracking_id"
-                name="tracking_id"
-                value="{{ tracking_id }}"
-                placeholder="Example: CR-ABC1234567"
-                maxlength="20"
-                required
-            >
-
-            <button type="submit">Track Parcel</button>
-        </form>
-
-        {% if searched %}
-            {% if parcel %}
-                <div class="result">
-                    <h2>Parcel Found</h2>
-
-                    <p>
-                        <strong>Tracking ID:</strong>
-                        {{ parcel.tracking_id }}
-                    </p>
-
-                    <p>
-                        <strong>Status:</strong>
-                        <span class="status">
-                            {{ parcel.get_status_display }}
-                        </span>
-                    </p>
-
-                    <p>
-                        <strong>Expected Delivery:</strong>
-                        {{ parcel.expected_delivery_date|date:"d M Y" }}
-                    </p>
-
-                    <div class="progress">
-                        <h3>Delivery Progress</h3>
-
-                        <div class="step completed">
-                            ✓ Parcel Registered
-                        </div>
-
-                        <div class="step {% if parcel.status == 'IN_TRANSIT' or parcel.status == 'DELIVERED' %}completed{% endif %}">
-                            {% if parcel.status == 'IN_TRANSIT' or parcel.status == 'DELIVERED' %}
-                                ✓
-                            {% else %}
-                                ○
-                            {% endif %}
-                            In Transit
-                        </div>
-
-                        <div class="step {% if parcel.status == 'DELIVERED' %}completed{% endif %}">
-                            {% if parcel.status == 'DELIVERED' %}
-                                ✓ Delivered
-                            {% else %}
-                                ○ Delivered
-                            {% endif %}
-                        </div>
-
-                        {% if parcel.status == 'FAILED' %}
-                            <p><strong>Delivery Failed.</strong> Please contact the courier administrator for assistance.</p>
-                        {% endif %}
-                    </div>
-                </div>
-            {% else %}
-                <div class="result">
-                    <p>No parcel found with this tracking ID.</p>
-                    <p>Please check your tracking ID and try again.</p>
-                </div>
-            {% endif %}
+        {% if not public_tracking %}
+          <div class="tracking-meta">
+            <div class="meta-box">
+              <span class="meta-label">Sender</span>
+              {{ parcel.sender_name }}
+            </div>
+            <div class="meta-box">
+              <span class="meta-label">Delivering to</span>
+              {{ parcel.receiver_name }}<br>
+              <span class="muted">{{ parcel.delivery_address }}</span>
+            </div>
+            <div class="meta-box">
+              <span class="meta-label">Estimated delivery</span>
+              <strong>{{ parcel.expected_delivery_date|date:'l, d M Y' }}</strong>
+            </div>
+          </div>
+        {% else %}
+          <div class="tracking-meta">
+            <div class="meta-box">
+              <span class="meta-label">Estimated delivery</span>
+              <strong>{{ parcel.expected_delivery_date|date:'l, d M Y' }}</strong>
+            </div>
+          </div>
         {% endif %}
 
-        <p class="notice">
-            For assistance with a delivery issue, contact the courier administrator.
-        </p>
-    </div>
-</body>
-</html>
+        <h3>Delivery progress</h3>
+        <ol class="timeline" aria-label="Shipment progress">
+          <li class="timeline-step {% if parcel.status == 'REGISTERED' %}is-current{% else %}is-complete{% endif %}">
+            <span class="timeline-node" aria-hidden="true">{% if parcel.status == 'REGISTERED' %}1{% else %}✓{% endif %}</span>
+            <div class="timeline-copy">
+              <strong>Registered</strong>
+              <p>Your parcel has been booked.</p>
+            </div>
+          </li>
+          <li class="timeline-step {% if parcel.status != 'REGISTERED' %}is-complete{% endif %}">
+            <span class="timeline-node" aria-hidden="true">{% if parcel.status == 'REGISTERED' %}2{% else %}✓{% endif %}</span>
+            <div class="timeline-copy">
+              <strong>In transit</strong>
+              <p>Your parcel is moving through the delivery network.</p>
+            </div>
+          </li>
+          <li class="timeline-step {% if parcel.status == 'IN_TRANSIT' %}is-current{% elif parcel.status == 'DELIVERED' %}is-complete{% elif parcel.status == 'FAILED' or parcel.status == 'SCHEDULED_FOR_RETRY' or parcel.status == 'RTO_INITIATED' %}is-failed{% endif %}">
+            <span class="timeline-node" aria-hidden="true">{% if parcel.status == 'DELIVERED' %}✓{% elif parcel.status == 'FAILED' or parcel.status == 'SCHEDULED_FOR_RETRY' or parcel.status == 'RTO_INITIATED' %}!{% else %}3{% endif %}</span>
+            <div class="timeline-copy">
+              <strong>{% if parcel.status == 'IN_TRANSIT' %}Out for delivery{% else %}Delivery attempt{% endif %}</strong>
+              {% if parcel.status == 'FAILED' or parcel.status == 'SCHEDULED_FOR_RETRY' or parcel.status == 'RTO_INITIATED' %}
+                <p class="failure-copy">{{ parcel.get_failure_reason_display|default:'Delivery could not be completed.' }}{% if parcel.delivery_attempts %} · Attempt {{ parcel.delivery_attempts }} of 3{% endif %}</p>
+              {% elif parcel.status == 'IN_TRANSIT' %}
+                <p>The delivery agent is completing the final leg of the route.</p>
+              {% else %}
+                <p>Your parcel will be prepared for final delivery.</p>
+              {% endif %}
+            </div>
+          </li>
+          <li class="timeline-step {% if parcel.status == 'DELIVERED' %}is-complete is-current{% endif %}">
+            <span class="timeline-node" aria-hidden="true">{% if parcel.status == 'DELIVERED' %}✓{% else %}4{% endif %}</span>
+            <div class="timeline-copy">
+              <strong>Delivered</strong>
+              {% if parcel.status == 'DELIVERED' %}
+                <p>Received by {{ parcel.delivered_to|default:parcel.receiver_name }}.</p>
+              {% else %}
+                <p>This step will update once delivery is complete.</p>
+              {% endif %}
+            </div>
+          </li>
+        </ol>
+
+        {% if parcel.status == 'RTO_INITIATED' %}
+          <div class="alert alert-error" role="status">Return to origin has been initiated after three unsuccessful delivery attempts.</div>
+        {% endif %}
+
+        {% if request.user.is_authenticated and request.user.role == 'CUSTOMER' and delay_assessment and delay_assessment.level != 'NO_CURRENT_RISK' %}
+          <aside class="alert alert-error" role="status">
+            <strong>Delivery update: {{ delay_assessment.level|title }} delay risk</strong>
+            {% for reason in delay_assessment.reasons %}
+              <p>{{ reason.message }}</p>
+            {% endfor %}
+            <p>If you need help with this delivery, please contact support.</p>
+          </aside>
+        {% endif %}
+
+        {% if not public_tracking and parcel.history.exists %}
+          <section class="timeline-history" aria-labelledby="history-title">
+            <h3 id="history-title">Tracking history</h3>
+            <ol class="timeline">
+              {% for event in parcel.history.all %}
+                <li class="timeline-event">
+                  <span class="timeline-node" aria-hidden="true">✓</span>
+                  <div class="timeline-copy">
+                    <strong>{{ event.get_status_display }}</strong>
+                    {% if event.note %}<p>{{ event.note }}</p>{% endif %}
+                    {% if event.changed_by %}
+                      <p class="muted">By {{ event.changed_by.get_full_name|default:event.changed_by.username }}</p>
+                    {% else %}
+                      <p class="muted">Recorded by system</p>
+                    {% endif %}
+                    <time datetime="{{ event.created_at|date:'c' }}">{{ event.created_at|date:'d M Y · H:i' }}</time>
+                  </div>
+                </li>
+              {% endfor %}
+            </ol>
+          </section>
+        {% endif %}
+
+        {% if request.user.is_authenticated and request.user.role == 'CUSTOMER' %}
+          <aside class="issue-banner">
+            <p>Experiencing delays? Raise an instant dispute.</p>
+            <a class="button" href="{% url 'customer_complaint_create' %}?tracking_id={{ parcel.tracking_id|urlencode }}">Report a delivery issue</a>
+          </aside>
+        {% endif %}
+      </section>
+    {% else %}
+      <section class="tracking-card" role="status">
+        <div class="empty-state">
+          <span class="empty-icon" aria-hidden="true">?</span>
+          <strong>We couldn’t find that shipment</strong>
+          <p>Check the tracking number and search again.</p>
+        </div>
+      </section>
+    {% endif %}
+  {% endif %}
+{% endblock %}

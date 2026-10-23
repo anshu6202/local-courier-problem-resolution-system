@@ -1,0 +1,12 @@
+{% extends "admin/change_form.html" %}
+
+{% block object-tools-items %}
+  {% if original %}
+    <li>
+      <a href="{% url 'admin_parcel_label' original.tracking_id %}" target="_blank" rel="noopener">
+        Print shipping label
+      </a>
+    </li>
+  {% endif %}
+  {{ block.super }}
+{% endblock %}

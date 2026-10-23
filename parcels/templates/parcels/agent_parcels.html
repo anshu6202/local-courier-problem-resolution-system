@@ -1,56 +1,111 @@
+{% extends 'base.html' %}
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Deliveries</title>
-</head>
-<body>
-    <h1>My Assigned Deliveries</h1>
+{% block title %}My deliveries · Parcelly{% endblock %}
 
-    <p>Welcome, {{ request.user.username }}!</p>
+{% block content %}
+  <section class="page-heading">
+    <div>
+      <p class="eyebrow">Agent workspace</p>
+      <h1>My deliveries</h1>
+      <p class="subheading">Your assigned parcels and next delivery actions.</p>
+    </div>
+  </section>
 
-    <p>
-        <a href="{% url 'dashboard' %}">Back to Dashboard</a>
-    </p>
+  <section data-filterable-list data-list-unit="shipments" aria-label="Filter deliveries">
+    <div class="list-tools">
+      <label class="list-search">
+        <span aria-hidden="true">⌕</span>
+        <input
+          type="search"
+          data-list-search
+          placeholder="Search tracking ID, recipient, phone or address"
+          aria-label="Search deliveries"
+        >
+      </label>
 
-    {% if parcels %}
-        <table border="1" cellpadding="10">
-            <thead>
-                <tr>
-                    <th>Tracking ID</th>
-                    <th>Receiver</th>
-                    <th>Delivery Address</th>
-                    <th>Expected Date</th>
-                    <th>Status</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
+      <label class="list-status">
+        Status
+        <select data-list-status aria-label="Filter deliveries by status">
+          <option value="">All statuses</option>
+          <option value="REGISTERED">Registered</option>
+          <option value="IN_TRANSIT">In transit</option>
+          <option value="DELIVERED">Delivered</option>
+          <option value="FAILED">Failed</option>
+          <option value="SCHEDULED_FOR_RETRY">Scheduled for retry</option>
+          <option value="RTO_INITIATED">Return to origin</option>
+        </select>
+      </label>
+      <span class="list-count" data-list-count aria-live="polite"></span>
+    </div>
 
-            <tbody>
-                {% for parcel in parcels %}
-                    <tr>
-                        <td>{{ parcel.tracking_id }}</td>
-                        <td>{{ parcel.receiver_name }}</td>
-                        <td>{{ parcel.delivery_address }}</td>
-                        <td>{{ parcel.expected_delivery_date }}</td>
-                        <td>{{ parcel.get_status_display }}</td>
-                        <td>
-                            {% if parcel.status == "REGISTERED" or parcel.status == "IN_TRANSIT" %}
-                                <a href="{% url 'update_parcel_status' parcel.tracking_id %}">
-                                    Update Status
-                                </a>
-                            {% else %}
-                                Completed
-                            {% endif %}
-                        </td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    {% else %}
-        <p>No parcels have been assigned to you yet.</p>
-    {% endif %}
-</body>
-</html>
+    <div class="table-wrap" data-mobile-cards>
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Tracking ID</th>
+            <th scope="col">Recipient</th>
+            <th scope="col">Delivery address</th>
+            <th scope="col">Expected</th>
+            <th scope="col">Status</th>
+            <th scope="col">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for parcel in parcels %}
+            <tr
+              data-status="{{ parcel.status }}"
+              data-search="{{ parcel.tracking_id }} {{ parcel.receiver_name }} {{ parcel.receiver_phone }} {{ parcel.delivery_address }}"
+            >
+              <td data-label="Tracking ID">
+                <a href="{% url 'public_parcel_track' %}?tracking_id={{ parcel.tracking_id|urlencode }}">
+                  <strong>{{ parcel.tracking_id }}</strong>
+                </a>
+              </td>
+              <td data-label="Recipient">
+                <strong>{{ parcel.receiver_name }}</strong><br>
+                <a class="delivery-call" href="tel:{{ parcel.receiver_phone }}">{{ parcel.receiver_phone }}</a>
+              </td>
+              <td data-label="Address">{{ parcel.delivery_address|truncatechars:72 }}</td>
+              <td data-label="Expected">{{ parcel.expected_delivery_date|date:'d M Y' }}</td>
+              <td data-label="Status">
+                <span class="pill pill-{{ parcel.status }}">{{ parcel.get_status_display }}</span>
+              </td>
+              <td data-label="Actions">
+                <div class="mobile-card-actions">
+                  {% if parcel.status == 'REGISTERED' or parcel.status == 'SCHEDULED_FOR_RETRY' %}
+                    <a class="button" href="{% url 'update_parcel_status' parcel.tracking_id %}">
+                      Start delivery
+                    </a>
+                  {% elif parcel.status == 'IN_TRANSIT' %}
+                    <a class="button" href="{% url 'update_parcel_status' parcel.tracking_id %}#id_status">
+                      Mark delivered
+                    </a>
+                    <a class="button button-secondary" href="{% url 'update_parcel_status' parcel.tracking_id %}#id_failure_reason">
+                      Report issue
+                    </a>
+                  {% else %}
+                    <span class="muted">No action required</span>
+                  {% endif %}
+                  <a class="button button-secondary" href="{% url 'admin_parcel_label' parcel.tracking_id %}">
+                    Print label
+                  </a>
+                </div>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="6">
+                <div class="empty-state">
+                  <span class="empty-icon" aria-hidden="true">↗</span>
+                  <strong>No deliveries assigned</strong>
+                  <p>Parcels assigned to your route will appear here.</p>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <p class="filter-empty" data-filter-empty hidden>No deliveries match your search. Try another name, number, or status.</p>
+    </div>
+  </section>
+{% endblock %}

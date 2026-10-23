@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+
+{% block title %}Courier analytics · Parcelly{% endblock %}
+
+{% block head %}
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" defer></script>
+{% endblock %}
+
+{% block content %}
+  <section class="page-heading">
+    <div>
+      <p class="eyebrow">Admin reporting</p>
+      <h1>Courier problem analytics</h1>
+      <p class="subheading">Recorded parcel, delivery, complaint and agent outcomes.</p>
+    </div>
+    <a class="button button-secondary" href="{% url 'admin_dashboard' %}">Back to dashboard</a>
+  </section>
+
+  <section class="card section-gap">
+    <form method="get" class="filter-bar" aria-label="Analytics date range">
+      <label for="period">Date range</label>
+      <select id="period" name="period" onchange="this.form.submit()">
+        <option value="7" {% if period == '7' %}selected{% endif %}>Last 7 days</option>
+        <option value="30" {% if period == '30' %}selected{% endif %}>Last 30 days</option>
+        <option value="custom" {% if period == 'custom' %}selected{% endif %}>Custom range</option>
+      </select>
+      <label for="start-date">From</label>
+      <input id="start-date" type="date" name="start_date" value="{{ start_date|date:'Y-m-d' }}">
+      <label for="end-date">To</label>
+      <input id="end-date" type="date" name="end_date" value="{{ end_date|date:'Y-m-d' }}">
+      <button type="submit" class="button button-secondary">Apply</button>
+    </form>
+    {% for error in filter_errors %}<p class="alert alert-error" role="alert">{{ error }}</p>{% endfor %}
+    <p class="muted">Historical metrics: {{ start_date|date:'d M Y' }} – {{ end_date|date:'d M Y' }}. Operational alerts below show current live work.</p>
+  </section>
+
+  <section class="stats-grid section-gap" aria-label="Operational alerts">
+    <article class="stat-card"><span class="stat-label">Overdue parcels</span><strong class="stat-number">{{ overdue_parcel_count }}</strong></article>
+    <article class="stat-card"><span class="stat-label">High-risk parcels</span><strong class="stat-number">{{ high_risk_parcel_count }}</strong></article>
+    <article class="stat-card"><span class="stat-label">Unassigned parcels</span><strong class="stat-number">{{ unassigned_parcel_count }}</strong></article>
+    <article class="stat-card"><span class="stat-label">Overdue complaints</span><strong class="stat-number">{{ overdue_complaint_count }}</strong></article>
+  </section>
+
+  <section class="content-grid section-gap">
+    <article class="card">
+      <h2>Parcel status distribution</h2>
+      {% if parcel_status_total %}<div class="chart-box"><canvas id="parcel-status-chart" aria-label="Parcel status doughnut chart"></canvas></div>
+      {% else %}<p class="muted">No parcels were booked in this date range.</p>{% endif %}
+    </article>
+    <article class="card">
+      <h2>Booking and delivery trend</h2>
+      {% if trend_total %}<div class="chart-box"><canvas id="delivery-trend-chart" aria-label="Booking and delivery trend line chart"></canvas></div>
+      {% else %}<p class="muted">No bookings or delivery events in this date range.</p>{% endif %}
+    </article>
+    <article class="card">
+      <h2>Complaints by category</h2>
+      {% if complaint_total %}<div class="chart-box"><canvas id="complaint-category-chart" aria-label="Complaint categories bar chart"></canvas></div>
+      {% else %}<p class="muted">No complaints were created in this date range.</p>{% endif %}
+    </article>
+    <article class="card">
+      <h2>Agent delivery outcomes</h2>
+      {% if agent_performance %}<div class="chart-box"><canvas id="agent-performance-chart" aria-label="Agent delivery performance bar chart"></canvas></div>
+      {% else %}<p class="muted">No delivery agents are registered.</p>{% endif %}
+    </article>
+  </section>
+
+  <section class="content-grid section-gap">
+    <article class="card">
+      <h2>Delivery performance</h2>
+      <p>On time: <strong>{{ on_time_count }}</strong> · Late: <strong>{{ late_count }}</strong></p>
+      <p>Recorded failed-attempt rate:
+        <strong>{% if failure_rate != None %}{{ failure_rate }}%{% else %}No delivery outcomes{% endif %}</strong>
+      </p>
+      <p class="muted">Rate = failed attempt events ÷ (failed attempt events + completed delivery events), using event timestamps in the selected range.</p>
+    </article>
+    <article class="card">
+      <h2>Complaint progress</h2>
+      <p>Open: {{ complaint_status_counts.open_count }} · In progress: {{ complaint_status_counts.in_progress_count }} · Resolved: {{ complaint_status_counts.resolved_count }}</p>
+      <p>Escalated: {{ complaint_status_counts.escalated_count }} · Current overdue: {{ overdue_complaint_count }}</p>
+      <p>Average resolution time:
+        <strong>{% if average_resolution_hours != None %}{{ average_resolution_hours }} hours{% else %}No resolved complaints in range{% endif %}</strong>
+      </p>
+    </article>
+  </section>
+
+  <section class="card section-gap">
+    <h2>Agent performance detail</h2>
+    <p class="muted">Assigned count is a current-assignment snapshot for parcels booked in range. Delivery outcomes are attributed to the agent recorded as the actor in parcel history. Success rate = agent-recorded deliveries ÷ (agent-recorded deliveries + agent-recorded failed attempts).</p>
+    <div class="table-wrap" data-mobile-cards>
+      <table>
+        <thead><tr><th>Agent</th><th>Assigned now</th><th>Delivered</th><th>Failed attempts</th><th>Success rate</th></tr></thead>
+        <tbody>
+          {% for agent in agent_performance %}
+            <tr><td>{{ agent.username }}</td><td>{{ agent.assigned_count }}</td><td>{{ agent.delivered }}</td><td>{{ agent.failed_attempts }}</td><td>{% if agent.success_rate != None %}{{ agent.success_rate }}%{% else %}No outcomes{% endif %}</td></tr>
+          {% empty %}<tr><td colspan="5" class="muted">No agent performance data for this range.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card section-gap">
+    <h2>High-risk parcels</h2>
+    {% for case in high_risk_parcels %}
+      <p><a href="{% url 'admin_parcels' %}?q={{ case.parcel.tracking_id|urlencode }}">{{ case.parcel.tracking_id }}</a> · {{ case.parcel.get_status_display }} · {{ case.reasons.0.message }}</p>
+    {% empty %}<p class="muted">No active high-risk parcels.</p>{% endfor %}
+    <p><a href="{% url 'admin_parcel_export' %}">Download existing parcel CSV report</a></p>
+  </section>
+
+  {{ parcel_status_labels|json_script:'parcel-status-labels' }}
+  {{ parcel_status_values|json_script:'parcel-status-values' }}
+  {{ trend_labels|json_script:'trend-labels' }}
+  {{ booking_trend|json_script:'booking-trend' }}
+  {{ delivery_trend|json_script:'delivery-trend' }}
+  {{ complaint_labels|json_script:'complaint-labels' }}
+  {{ complaint_values|json_script:'complaint-values' }}
+  {{ agent_labels|json_script:'agent-labels' }}
+  {{ agent_delivered|json_script:'agent-delivered' }}
+  {{ agent_failed_attempts|json_script:'agent-failed-attempts' }}
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      if (!window.Chart) return;
+      const readData = (id) => JSON.parse(document.getElementById(id).textContent);
+      const makeChart = (id, config) => {
+        const canvas = document.getElementById(id);
+        if (canvas) new Chart(canvas, config);
+      };
+      makeChart("parcel-status-chart", {
+        type: "doughnut",
+        data: { labels: readData("parcel-status-labels"), datasets: [{ data: readData("parcel-status-values"), backgroundColor: ["#64748b", "#3b82f6", "#10b981", "#ef4444", "#f59e0b", "#7c3aed"] }] },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+      makeChart("delivery-trend-chart", {
+        type: "line",
+        data: { labels: readData("trend-labels"), datasets: [
+          { label: "Bookings", data: readData("booking-trend"), borderColor: "#2563eb", tension: 0.25 },
+          { label: "Delivered", data: readData("delivery-trend"), borderColor: "#10b981", tension: 0.25 }
+        ] },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+      makeChart("complaint-category-chart", {
+        type: "bar",
+        data: { labels: readData("complaint-labels"), datasets: [{ label: "Complaints", data: readData("complaint-values"), backgroundColor: "#f59e0b" }] },
+        options: { responsive: true, maintainAspectRatio: false, indexAxis: "y" }
+      });
+      makeChart("agent-performance-chart", {
+        type: "bar",
+        data: { labels: readData("agent-labels"), datasets: [
+          { label: "Delivered", data: readData("agent-delivered"), backgroundColor: "#10b981" },
+          { label: "Failed attempts", data: readData("agent-failed-attempts"), backgroundColor: "#ef4444" }
+        ] },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+    });
+  </script>
+{% endblock %}

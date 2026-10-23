@@ -1,0 +1,88 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0f172a">
+    <title>{% block title %}Parcelly · Courier operations{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'app.css' %}">
+    {% block head %}{% endblock %}
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+
+    <header class="site-header">
+      <div class="topbar">
+        <a class="brand" href="{% if request.user.is_authenticated %}{% url 'dashboard' %}{% else %}{% url 'public_parcel_track' %}{% endif %}">
+          <span class="brand-mark" aria-hidden="true">P</span>
+          <span>parcelly<small>COURIER OPERATIONS</small></span>
+        </a>
+
+        <nav class="nav-links" aria-label="Main navigation">
+          {% if request.user.is_authenticated %}
+            {% if request.user.is_superuser or request.user.role == 'ADMIN' %}
+              <a href="{% url 'admin_dashboard' %}">Dashboard</a>
+            {% else %}
+              <a href="{% url 'dashboard' %}">Dashboard</a>
+            {% endif %}
+            {% if request.user.is_superuser or request.user.role == 'ADMIN' or request.user.role == 'CUSTOMER' %}
+              <a href="{% url 'public_parcel_track' %}">Track</a>
+            {% endif %}
+
+            {% if request.user.is_superuser or request.user.role == 'ADMIN' %}
+              <a href="{% url 'admin_parcels' %}">Parcels</a>
+              <a href="{% url 'courier_analytics' %}">Analytics</a>
+              <a href="{% url 'admin_redelivery_requests' %}">Redelivery requests</a>
+              <a href="{% url 'admin_complaints' %}">Complaints</a>
+            {% elif request.user.role == 'AGENT' %}
+              <a href="{% url 'agent_deliveries' %}">My deliveries</a>
+              <a href="{% url 'agent_assigned_complaints' %}">Complaints</a>
+            {% else %}
+              <a href="{% url 'customer_shipments' %}">My parcels</a>
+              <a href="{% url 'customer_complaints' %}">My complaints</a>
+            {% endif %}
+
+            <span class="nav-user">{{ request.user.username }}</span>
+            <span class="role-pill">{{ request.user.get_role_display }}</span>
+            <form class="logout-form" method="post" action="{% url 'logout' %}">
+              {% csrf_token %}
+              <button class="nav-logout" type="submit">Sign out</button>
+            </form>
+          {% else %}
+            <a href="{% url 'public_parcel_track' %}">Track a parcel</a>
+            <a href="{% url 'customer_register' %}">Create account</a>
+            <a class="button button-small" href="{% url 'login' %}">Sign in</a>
+          {% endif %}
+        </nav>
+      </div>
+    </header>
+
+    <main id="main-content" class="page-shell">
+      {% if messages %}
+        <div class="messages" aria-live="polite" aria-atomic="false">
+          {% for message in messages %}
+            <div class="alert alert-{{ message.tags|default:'info' }}" role="status">
+              <span>{{ message }}</span>
+              <button
+                class="toast-dismiss"
+                type="button"
+                data-toast-dismiss
+                aria-label="Dismiss notification"
+              >&times;</button>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      {% block content %}{% endblock %}
+    </main>
+
+    <footer class="site-footer">
+      <span>Parcelly</span>
+      <span>Local delivery, clearly tracked.</span>
+    </footer>
+
+    <script src="{% static 'app.js' %}" defer></script>
+  </body>
+</html>

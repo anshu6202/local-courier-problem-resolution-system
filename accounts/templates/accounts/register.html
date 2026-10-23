@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block title %}Create account | Parcelly{% endblock %}
+{% block content %}
+<div class="login-wrap">
+  <div class="login-brand"><span class="brand-mark" style="margin:auto">P</span><p class="eyebrow" style="margin-top:15px">Customer registration</p><h1>Create your account</h1><p class="subheading">Keep your shipments and support requests together.</p></div>
+  <section class="card form-card">
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {% if form.non_field_errors %}<div class="alert alert-error">{{ form.non_field_errors }}</div>{% endif %}
+      {{ form.as_p }}
+      <button type="submit" style="width:100%">Create customer account</button>
+    </form>
+  </section>
+  <p class="muted" style="text-align:center;margin-top:18px">Already registered? <a href="{% url 'login' %}">Sign in</a></p>
+</div>
+{% endblock %}

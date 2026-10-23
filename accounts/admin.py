@@ -9,16 +9,19 @@ from .models import User
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
     fieldsets = UserAdmin.fieldsets + (
-        ("Courier Role", {"fields": ("role",)}),
+        ("Courier Profile", {"fields": ("role", "phone_number", "branch_code", "is_active_agent")}),
     )
 
     add_fieldsets = UserAdmin.add_fieldsets + (
-        ("Courier Role", {"fields": ("role",)}),
+        ("Courier Profile", {"fields": ("role", "phone_number", "branch_code", "is_active_agent")}),
     )
 
     list_display = (
         "username",
         "email",
         "role",
+        "phone_number",
+        "branch_code",
+        "is_active_agent",
         "is_staff",
     )
